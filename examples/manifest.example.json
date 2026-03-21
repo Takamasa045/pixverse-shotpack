@@ -1,0 +1,159 @@
+{
+  "project": {
+    "id": "signature-product-launch",
+    "name": "Signature Product Launch",
+    "version": "1.0.0",
+    "primaryDeliverable": "wide",
+    "textPolicy": "",
+    "editPolicy": "",
+    "protagonistPolicy": "",
+    "motifs": [
+      "environment",
+      "material-detail",
+      "hero-product",
+      "handoff",
+      "usage",
+      "signature-frame"
+    ],
+    "body": "",
+    "artistNotes": null,
+    "referenceNotes": null
+  },
+  "audio": {
+    "src": "audio/shotpack-placeholder.wav",
+    "durationInSeconds": 25,
+    "bpm": 90
+  },
+  "theme": {
+    "background": "#0A0A0A",
+    "accent": "#FF6B35",
+    "text": "#FFFFFF"
+  },
+  "deliverables": [
+    {
+      "id": "wide",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "compositionId": "Shotpack",
+      "durationInFrames": 750,
+      "sceneCount": 6
+    }
+  ],
+  "visualPeakSection": "",
+  "quietSection": "",
+  "thumbnail": {
+    "sceneId": "shot-01",
+    "frame": 0
+  },
+  "scenes": [
+    {
+      "id": "shot-01",
+      "music_section": "",
+      "objective": "Establish world",
+      "emotion": "curiosity",
+      "motif": "environment",
+      "hookText": null,
+      "transition": "crossfade",
+      "startSec": 0,
+      "endSec": 3,
+      "durationSec": 3,
+      "startFrame": 0,
+      "durationInFrames": 90,
+      "assets": {
+        "videoSrc": "clips/shot-01-wide.mp4",
+        "stills": []
+      }
+    },
+    {
+      "id": "shot-02",
+      "music_section": "",
+      "objective": "Introduce texture",
+      "emotion": "stillness",
+      "motif": "material-detail",
+      "hookText": null,
+      "transition": "cut",
+      "startSec": 3,
+      "endSec": 5,
+      "durationSec": 2,
+      "startFrame": 90,
+      "durationInFrames": 60,
+      "assets": {
+        "videoSrc": "clips/shot-02-wide.mp4",
+        "stills": []
+      }
+    },
+    {
+      "id": "shot-03",
+      "music_section": "",
+      "objective": "Present hero product",
+      "emotion": "attention",
+      "motif": "hero-product",
+      "hookText": null,
+      "transition": "cut",
+      "startSec": 5,
+      "endSec": 9,
+      "durationSec": 4,
+      "startFrame": 150,
+      "durationInFrames": 120,
+      "assets": {
+        "videoSrc": "clips/shot-03-wide.mp4",
+        "stills": []
+      }
+    },
+    {
+      "id": "shot-04",
+      "music_section": "",
+      "objective": "Show interaction",
+      "emotion": "focus",
+      "motif": "handoff",
+      "hookText": null,
+      "transition": "cut",
+      "startSec": 9,
+      "endSec": 12,
+      "durationSec": 3,
+      "startFrame": 270,
+      "durationInFrames": 90,
+      "assets": {
+        "videoSrc": "clips/shot-04-wide.mp4",
+        "stills": []
+      }
+    },
+    {
+      "id": "shot-05",
+      "music_section": "",
+      "objective": "Build usage context",
+      "emotion": "confidence",
+      "motif": "usage",
+      "hookText": null,
+      "transition": "cut",
+      "startSec": 12,
+      "endSec": 17,
+      "durationSec": 5,
+      "startFrame": 360,
+      "durationInFrames": 150,
+      "assets": {
+        "videoSrc": "clips/shot-05-wide.mp4",
+        "stills": []
+      }
+    },
+    {
+      "id": "shot-06",
+      "music_section": "",
+      "objective": "Closing hold",
+      "emotion": "resolution",
+      "motif": "signature-frame",
+      "hookText": null,
+      "transition": "cut",
+      "startSec": 17,
+      "endSec": 25,
+      "durationSec": 8,
+      "startFrame": 510,
+      "durationInFrames": 240,
+      "assets": {
+        "videoSrc": "clips/shot-06-wide.mp4",
+        "stills": []
+      }
+    }
+  ]
+}

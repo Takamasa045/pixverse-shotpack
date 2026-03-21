@@ -1,0 +1,6 @@
+.DS_Store
+dist/
+ref-images
+run-log.md
+credits-report.json
+*.zip

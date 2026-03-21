@@ -1,0 +1,121 @@
+meta:
+  title: "signature-product-launch"
+  fps: 30
+  aspects: ["16:9", "9:16"]
+  style_notes: "premium editorial, warm neutrals, soft charcoal contrast, tactile materials, shallow depth of field, subtle film grain"
+  color_arc: cool-to-warm
+  prompt_negative: "blurry, distorted hands, jerky motion, morphing, flickering, text, watermark, oversaturated"
+
+# Composition Summary:
+#   Total: ~25s / 6 shots
+#   Act 1 (Hook):       shot-01 + shot-02 = 5s  (20%)
+#   Act 2 (Body):       shot-03〜shot-05  = 12s (48%)
+#   Act 3 (Resolution): shot-06           = 8s  (32%)
+#   Duration variance:  2s : 8s = 1:4 ✓
+#   Camera variety: 6 distinct movements ✓
+
+shots:
+  - id: shot-01
+    type: video
+    prompt: >-
+      Wide shot of a quiet studio interior at first light,
+      hero product resting on a central plinth,
+      soft haze and premium architectural atmosphere
+    duration: 3
+    model: v5.6
+    quality: 1080p
+    hero: true
+    act: 1
+    framing: wide
+    color_temp: cool
+    transition: crossfade
+    camera:
+      movement: aerial-drift
+    objective: "Establish world"
+    emotion: "curiosity"
+    motif: "environment"
+
+  - id: shot-02
+    type: video
+    prompt: >-
+      Extreme close-up of brushed metal and textured fabric surfaces,
+      grazing light revealing fine detail,
+      tactile premium material study
+    duration: 2
+    act: 1
+    framing: extreme-close-up
+    color_temp: cool
+    transition: cut
+    camera:
+      movement: static
+    objective: "Introduce texture"
+    emotion: "intimacy"
+    motif: "material-detail"
+
+  - id: shot-03
+    type: video
+    prompt: >-
+      Close-up hero shot of the product on a matte pedestal,
+      controlled practical lighting, subtle atmosphere,
+      premium editorial composition
+    duration: 4
+    act: 2
+    framing: close-up
+    color_temp: neutral
+    transition: cut
+    camera:
+      movement: dolly-in
+    objective: "Present hero product"
+    emotion: "attention"
+    motif: "hero-product"
+
+  - id: shot-04
+    type: video
+    prompt: >-
+      Hands carefully placing and adjusting the product inside a quiet studio,
+      layered foreground shapes, deliberate motion,
+      tactile interaction in progress
+    duration: 3
+    act: 2
+    framing: medium-close
+    color_temp: neutral
+    transition: cut
+    camera:
+      movement: pan-right
+    objective: "Show interaction"
+    emotion: "focus"
+    motif: "handoff"
+
+  - id: shot-05
+    type: video
+    prompt: >-
+      Medium shot of the product in use within a calm interior setting,
+      subtle reflections, atmospheric depth,
+      poised momentum before the final reveal
+    duration: 5
+    act: 2
+    framing: medium
+    color_temp: neutral
+    transition: cut
+    camera:
+      movement: tracking
+    objective: "Build usage context"
+    emotion: "confidence"
+    motif: "usage"
+
+  - id: shot-06
+    type: video
+    prompt: >-
+      Wide closing frame of the product and surrounding space,
+      warmer tones settling into the scene,
+      calm premium ending image with lingering atmosphere
+    duration: 8
+    act: 3
+    framing: wide
+    color_temp: warm
+    transition: cut
+    camera:
+      movement: dolly-out
+    objective: "Closing hold"
+    emotion: "resolution"
+    motif: "signature-frame"

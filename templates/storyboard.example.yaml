@@ -1,0 +1,167 @@
+# PixVerse Shotpack — Storyboard Template
+#
+# このファイルを storyboard.yaml としてコピーし、プロジェクトに合わせて編集する。
+# 必須フィールドには (required) マークあり。
+# duration は CLI 上 1〜10 だが、skill 実行前に 8 秒へ cap される。
+# 構図・camera・transition のルールは SKILL.md を参照。
+
+meta:
+  title: "Generic Launch Film"                  # (required) プロジェクト名
+  fps: 30                                       # manifest 計算用。デフォルト 30
+  aspects: ["16:9"]                             # ["16:9", "9:16"] で vertical side output も生成
+  style_notes: "[overall look, finish, palette, texture, lens feel]"
+  color_arc: cool-to-warm                       # cool-to-warm | warm-to-cool | mono-burst
+  prompt_negative: "blurry, distorted faces, jerky motion, morphing, flickering, text, watermark, oversaturated"
+
+shots:
+  # --- Act 1: Hook ---
+
+  - id: shot-01                                 # (required) 一意の ID
+    type: video                                 # (required) video | transition | image
+    prompt: >-
+      Wide establishing shot of [environment or location],
+      [time of day] light, [weather or atmosphere],
+      premium cinematic opening mood
+    duration: 3                                 # 推奨 3〜8
+    model: v5.6                                 # video / transition は v5.6 基本
+    quality: 1080p
+    hero: true
+    act: 1
+    framing: wide
+    color_temp: cool
+    transition: crossfade                       # 冒頭のみ crossfade
+    camera:
+      movement: aerial-drift
+    objective: "Establish world"
+    emotion: "curiosity"
+    motif: "environment"
+
+  - id: shot-02
+    type: video
+    prompt: >-
+      Extreme close-up of [surface, material, or signature detail],
+      shallow depth of field, soft directional light,
+      tactile visual hook
+    duration: 2
+    act: 1
+    framing: close-up
+    color_temp: cool
+    transition: cut
+    camera:
+      movement: static
+    objective: "Introduce texture"
+    emotion: "stillness"
+    motif: "detail"
+
+  # --- Act 2: Body ---
+
+  - id: shot-03
+    type: video
+    prompt: >-
+      Close-up of [hero object, product, or prop] in its natural setting,
+      practical lighting, subtle atmospheric motion,
+      focused premium composition
+    duration: 4
+    act: 2
+    framing: medium-close
+    color_temp: neutral
+    transition: cut
+    camera:
+      movement: dolly-in
+    objective: "Present core motif"
+    emotion: "attention"
+    motif: "hero-object"
+
+  - id: shot-04
+    type: video
+    prompt: >-
+      Hands or silhouette interacting with [hero object or interface],
+      layered foreground and background elements,
+      purposeful action in progress
+    duration: 6
+    act: 2
+    framing: medium
+    color_temp: neutral
+    transition: cut
+    camera:
+      movement: pan-right
+    objective: "Show interaction"
+    emotion: "focus"
+    motif: "interaction"
+
+  - id: shot-05
+    type: video
+    prompt: >-
+      Medium shot of [hero scene or process moment],
+      controlled light contrast, atmospheric depth,
+      momentum building toward the main payoff
+    duration: 5
+    act: 2
+    framing: wide
+    color_temp: neutral
+    transition: cut
+    camera:
+      movement: tracking
+    objective: "Build momentum"
+    emotion: "confidence"
+    motif: "process"
+
+  # --- Act 3: Resolution ---
+
+  - id: shot-06
+    type: video
+    prompt: >-
+      Wide or medium-wide resolving shot of [final environment or hero frame],
+      richer warm tones, lingering atmosphere,
+      calm memorable ending image
+    duration: 8
+    act: 3
+    framing: medium
+    color_temp: warm
+    transition: cut
+    camera:
+      movement: dolly-out
+    objective: "Closing hold"
+    emotion: "resolution"
+    motif: "signature-frame"
+
+  # Validation notes:
+  # - Duration variance: 2s : 8s = 1 : 4
+  # - Camera variety: aerial-drift / static / dolly-in / pan-right / tracking / dolly-out
+  # - Cut ratio: 5 / 6 = 83.3%
+  # - Consecutive framing: wide -> close-up -> medium-close -> medium -> wide -> medium
+
+  # --- transition example ---
+  # - id: shot-07
+  #   type: transition
+  #   prompt: >-
+  #     Smooth cinematic transition from [starting scene]
+  #     to [ending scene], gentle morphing atmosphere
+  #   duration: 4
+  #   model: v5.6
+  #   quality: 720p
+  #   act: 2
+  #   color_temp: neutral
+  #   transition: cut
+  #   keyframes:
+  #     - "./refs/start-frame.png"
+  #     - "./refs/end-frame.png"
+  #   objective: "Bridge two scenes"
+  #   emotion: "transition"
+  #   motif: "time"
+  #   # 出力ファイル名は shot-07-trans.mp4
+
+  # --- image example ---
+  # - id: shot-08
+  #   type: image
+  #   prompt: >-
+  #     Poster-like still frame of [hero subject or environment],
+  #     premium cinematic composition, controlled color palette
+  #   model: "<confirm with `pixverse create image --help`>"
+  #   act: 3
+  #   framing: wide
+  #   color_temp: warm
+  #   transition: cut
+  #   objective: "Poster still"
+  #   emotion: "inviting"
+  #   motif: "poster"
