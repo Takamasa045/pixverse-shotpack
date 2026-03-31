@@ -6,6 +6,8 @@ This repository documents an Orchestrator-led PixVerse shotpack workflow. Start 
 
 As of March 31, 2026, this repo treats PixVerse-native `v6` as the preferred default model. Legacy `v5.6` remains the fallback, and source-backed limits and pricing live under `references/`.
 
+This repository does not include a Remotion project, Remotion runtime, or Node-based render pipeline. It is the producer-side workflow that prepares assets and a Remotion-compatible manifest for a separate consumer.
+
 ## Architecture
 
 ```text
