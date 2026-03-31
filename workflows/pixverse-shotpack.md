@@ -1,380 +1,125 @@
-# Workflow: PixVerse Shotpack
+# Workflow: PixVerse Shot Generator (T2V)
 
-AI エージェントがそのまま実行できる、実装準拠の手順書。
-PixVerse CLI 1.0.3 を前提にし、コマンドは **必ず `--json` 付き** で扱う。
+`meta.workflow: "t2v"` の storyboard を受け取り、PixVerse CLI で primary pass のショット群を生成するための runbook。Orchestrator から Gate 1 承認後に呼ばれる前提。PixVerse ネイティブモデルは `v6` を標準とする。
 
----
+## Inputs
 
-## Step 1: 入力ファイル確認
+- `storyboard.yaml`
+- `dist/pipeline-state.json` があれば resume 情報
 
-```bash
-ls brief.md storyboard.yaml 2>/dev/null
-```
+## Outputs
 
-分岐:
+- `dist/shot-01-primary.mp4` などの primary asset
+- `dist/run-log.md`
+- `dist/pipeline-state.json`
 
-- `storyboard.yaml` がある → Step 2 へ
-- `brief.md` だけある → Step 2 で storyboard を自動生成
-- どちらもない → ユーザーにどちらかの提供を求めて停止
+## Preconditions
 
-## Step 2: storyboard を確定する
+1. `storyboard.yaml` は Gate 1 承認済み
+2. `meta.workflow` は `t2v`
+3. すべての CLI コマンドに `--json` を付ける
+4. credit 見積もりは `references/credit-estimation.md` を使う
 
-### 2a. `storyboard.yaml` がある場合
-
-以下を確認:
-
-- `meta.title` がある
-- `shots` が 1 件以上ある
-- 各ショットに `id`, `prompt`, `type` がある
-- `type` が `video | transition | image`
-- `duration` は CLI 上 `1〜10` の範囲。未指定は `5`
-- skill 実行前に `duration > 8` を `8` に cap し、後で `run-log.md` に記録する
-- transition タイプは `keyframes` に 2 枚以上ある
-- `camera.movement` が定義済み、または多様性ルールに従って補完できる
-- `act`, `framing`, `color_temp` が妥当
-- `cut` 比率, crossfade の位置, ECU 数, framing 連続などが `SKILL.md` の checklist を満たす
-
-### 2b. `brief.md` しかない場合
-
-brief から以下を抽出:
-
-- タイトル → `meta.title`
-- トーン / 色味 / 質感 → `meta.style_notes`, `meta.color_arc`
-- キービジュアル → 各 shot の `prompt`
-- ターゲット尺 → shot 数と act 配分
-- Delivery → `meta.aspects`, `fps`
-- Constraints → `meta.prompt_negative`, 禁止要素, camera 方針
-
-自動生成時のルール:
-
-- 6〜8 shots を基本にする
-- Act 1 / 2 / 3 を割り当てる
-- `camera.movement` は 4 種類以上、連続重複なし
-- `zoom-in` / `zoom-out` は最大 1 回
-- `duration` は 3〜8 秒で変化を付ける
-- `transition` は `cut` を基本にし、`crossfade` は冒頭または act 境界だけ
-
-`storyboard.yaml` を出力したら、Step 3 へ進む。
-
----
-
-## Step 3: Gate 1 用の shot plan と credit budget を作る
-
-wide pass を前提に credit を見積もる。
+## Step 1: Preflight
 
 ```bash
+pixverse auth status --json
 pixverse account info --json
 ```
 
-使う値:
+判定:
 
-- 残高: `.credits.total`
-- 推定コスト: `shot_count * 400`
-- リトライ込みバッファ: `wide_estimate * 2`
+- exit `3`: `pixverse auth login` を実行して 1 回だけ再試行
+- 残高不足: `credit_insufficient` を Orchestrator へ返却して停止
+- 予算が残高の 80% 超: `credit_warning` を Gate に出す
 
-表示内容:
+## Step 2: Submit Jobs
 
-```text
-| # | ID      | Act | Framing | Camera       | Duration | Transition | Est.Cr | Prompt (先頭40字) |
-|---|---------|-----|---------|--------------|----------|------------|--------|-------------------|
-| 1 | shot-01 | 1   | wide    | aerial-drift | 3s       | crossfade  | 400 cr | Wide aerial shot... |
-
-必要クレジット（wide 推定）: 2,400 cr
-リトライバッファ込み: 4,800 cr
-現在の残高: 47,271 cr
-```
-
-注意:
-
-- `meta.aspects` に `"9:16"` があっても、この時点では wide だけ見積もる
-- vertical pass は Gate 2 で別承認
-
-ユーザーが承認したら Step 4。
-
----
-
-## Step 4: 出力ディレクトリを作る
-
-```bash
-mkdir -p dist/clips dist/stills dist/audio
-```
-
----
-
-## Step 5: 16:9 primary pass を生成する
-
-各 shot を順に処理する。
-
-### 5a. prompt を組み立てる
-
-順序:
-
-```text
-shot.prompt,
-<camera_movement_text>,
-meta.style_notes,
-avoiding: meta.prompt_negative
-```
-
-negative prompt 専用フラグは現 CLI に存在しないので使わない。
-
-### 5b. command を選ぶ
-
-**video**
+各 shot に対して:
 
 ```bash
 pixverse create video \
-  --prompt "<assembled_prompt>" \
-  --duration <capped_duration> \
-  --aspect-ratio 16:9 \
-  --quality <shot.quality or 1080p> \
-  --model <shot.model or v5.6> \
+  --prompt "<shot.prompt>" \
+  --model "<shot.model>" \
+  --quality "<shot.quality>" \
+  --duration <shot.duration> \
+  --aspect-ratio "<shot.aspect_ratio>" \
+  $( [ "<shot.audio>" = "true" ] && echo "--audio" ) \
+  $( [ "<shot.multi_shot>" = "true" ] && echo "--multi-shot" ) \
+  --no-wait \
   --json
 ```
 
-I2V:
-
-```bash
-pixverse create video \
-  --image "<shot.image>" \
-  --prompt "<assembled_prompt>" \
-  --duration <capped_duration> \
-  --aspect-ratio 16:9 \
-  --quality 1080p \
-  --model <shot.model or v5.6> \
-  --json
-```
-
-**transition**
-
-```bash
-pixverse create transition \
-  --images "<shot.keyframes[0]>" "<shot.keyframes[1]>" \
-  --prompt "<assembled_prompt>" \
-  --duration <capped_duration> \
-  --quality <shot.quality or 720p> \
-  --model <shot.model or v5.6> \
-  --json
-```
-
-**image**
-
-```bash
-pixverse create image \
-  --prompt "<assembled_prompt>" \
-  --aspect-ratio 16:9 \
-  --quality <shot.quality or 1080p> \
-  --model <shot.model or confirmed_image_model> \
-  --json
-```
-
-### 5c. 実行モード
-
-デフォルトは同期実行でよい。並列化したい場合だけ `--no-wait` を付け、返ってきた ID に対して:
-
-```bash
-pixverse task wait <video_or_image_id> --json
-```
-
-を実行する。
-
-### 5d. exit code ハンドリング
-
-| Exit | アクション |
-|------|-----------|
-| 0 | 続行 |
-| 3 | `pixverse auth login --json` → 元コマンドを 1 回だけ再試行 |
-| 4 | 即停止。以降は Step 8 で部分レポート |
-| 5 | 同条件で 1 回だけ再試行 |
-| 6 | duration / aspect / path などを補正して 1 回だけ再試行 |
-| 1 / 2 | ログに記録し、必要なら 1 回だけ再試行してからスキップ |
-
-### 5e. ダウンロードして rename する
-
-video / transition:
-
-```bash
-pixverse asset download <video_id> --dest dist/clips --json
-```
-
-image:
-
-```bash
-pixverse asset download <image_id> --type image --dest dist/stills --json
-```
-
-rename 規則:
-
-- video: `dist/clips/shot-<NN>-wide.mp4`
-- transition: `dist/clips/shot-<NN>-trans.mp4`
-- image: `dist/stills/shot-<NN>-still.png`
-
-download は出力ファイル名を固定できない。新規ファイル名を確認し、既存ファイルと衝突しないことを確かめてから rename する。
-
-### 5f. hero shot を upscale する
-
-`hero: true` の shot だけ:
-
-```bash
-pixverse create upscale --video <video_id> --quality 1080p --json
-```
-
-必要なら再 download して元ファイルを置き換える。
-
-### 5g. wide pass の結果を保持する
-
-メモリまたは中間 JSON に以下を持つ:
+ジョブキューには最低限以下を持つ。
 
 ```json
 {
-  "id": "shot-01",
-  "status": "success",
+  "shot_id": "shot-01",
   "video_id": 100001,
-  "file": "clips/shot-01-wide.mp4",
-  "credits_estimate": 400,
-  "retries": 0,
-  "duration_sec": 3
+  "submitted_at": "2026-03-30T14:40:00+09:00"
 }
 ```
 
----
-
-## Step 6: Gate 2 で 9:16 second pass を判断する
-
-`meta.aspects` に `"9:16"` がなければこの step はスキップ。
-
-ある場合:
-
-1. wide pass 成功後にクレジット残高を再取得
-2. 追加見積もりを提示
-3. ユーザー承認後だけ `9:16` で再生成
+## Step 3: Wait and Retry
 
 ```bash
-pixverse account info --json
+pixverse task wait <video_id> --json --timeout 300
 ```
 
-表示内容:
+終了コード契約:
 
-```text
-16:9 生成完了。9:16 の second pass を実行しますか？
-追加クレジット（推定）: 2,400 cr
-現在の残高: 45,100 cr
-```
+- exit `0`: 完了
+- exit `2`: timeout を `600` に上げて 1 回だけ再試行
+- exit `5`: `meta.prompt_negative` を補強して最大 2 回まで再投入
+- exit `6`: validation error。値を記録して停止。再投入しない
 
-実行時の rename:
+`v6` で `multi_shot: true` の場合は、1 クリップの内部に複数カメラ遷移を持たせる。scene 分割の代替には使わない。
 
-- video: `shot-<NN>-vert.mp4`
-- image: `shot-<NN>-still-vert.png`
+詳細は `references/exit-codes.md` を正とする。
 
-重要:
-
-- 現行 `RenderManifest` は per-scene で 1 本の asset しか持てない
-- したがって `manifest.json` は wide のみを参照する
-- vertical side output は `run-log.md` と `credits-report.json` に残す
-
----
-
-## Step 7: placeholder audio と manifest を作る
-
-### 7a. total duration を計算する
-
-`duration_sec` の合計を出し、scene timing を確定する。
-
-### 7b. consumer 互換の placeholder audio を用意する
-
-`ffmpeg` が使えるなら:
+## Step 4: Download
 
 ```bash
-ffmpeg \
-  -f lavfi \
-  -i anullsrc=r=48000:cl=stereo \
-  -t <total_duration_sec> \
-  -c:a pcm_s16le \
-  dist/audio/shotpack-placeholder.wav \
-  -y
+pixverse asset download <video_id> --dest dist/ --json
 ```
 
-`ffmpeg` がない場合は、同等の無音 WAV を別途用意して `dist/audio/shotpack-placeholder.wav` として配置する。
+download 後は新規ファイルを検出し、対象 shot に対応付けて以下へ rename する。
 
-### 7c. `manifest.json` を構築する
+- primary: `dist/shot-01-primary.mp4`
+- failed retry temp: `dist/.retry-shot-01-<n>.mp4`
 
-現行 `RenderManifest` に合わせて以下を入れる:
+## Step 5: Run Log
 
-- `project.id`, `project.name`, `project.version`, `primaryDeliverable`
-- `audio.src`, `audio.durationInSeconds`, `audio.bpm`
-- `theme`
-- `deliverables` は **wide のみ**
-- `thumbnail`
-- `scenes[*]`
+`dist/run-log.md` に追記する内容:
 
-scene timing:
-
-```text
-startSec = 前 scene の endSec
-endSec = startSec + durationSec
-startFrame = Math.round(startSec * fps)
-durationInFrames = Math.round(durationSec * fps)
-```
-
-asset path:
-
-- video / transition は `clips/...`
-- image は `videoSrc: null` と `stills: ["stills/..."]`
-
----
-
-## Step 8: `run-log.md` と `credits-report.json` を出す
-
-`run-log.md`:
-
-- cap した duration
-- retry 回数
-- success / failed / skipped
-- wide / vertical の出力先
-
-`credits-report.json`:
-
-```bash
-pixverse account info --json
-```
-
-開始時 / 終了時の `.credits.total` から差分を出す。
-
----
-
-## Step 9: Gate 3 で完了報告する
-
-出す内容:
-
-- 成功 / 失敗数
+- shot ごとの投入時刻 / 完了時刻
+- 実行した model / duration / quality
+- `multi_shot` の有無
 - 消費クレジット
-- `dist/manifest.json`
-- vertical side output の有無
-- 失敗ショットがある場合だけ再試行確認
+- retry 回数
+- 最終 status (`success`, `retried`, `permanent_failure`)
 
-例:
+例は `examples/run-log.example.md` を参照。
 
-```text
-生成結果: 6/6 成功
-消費クレジット: 2,100 cr
-manifest: dist/manifest.json
-vertical side output: なし
-```
+## Step 6: Pipeline State
 
----
+フェーズの節目ごとに `dist/pipeline-state.json` を更新する。
 
-## Remotion への受け渡し
+- `current_phase`
+- `phases_completed`
+- `phases_remaining`
+- `credits_consumed`
+- `retry_count["shot-generator"]`
+- `errors`
 
-wide manifest をそのまま使う場合:
+## Dry Run
 
-```bash
-cp -r dist/clips <remotion-project>/public/assets/shotpack/video/
-cp -r dist/stills <remotion-project>/public/assets/shotpack/stills/
-cp -r dist/audio <remotion-project>/public/assets/shotpack/audio/
-cp dist/manifest.json <remotion-project>/public/assets/shotpack/data/manifest.json
-```
+`--dry-run` では:
 
-注意:
+- コマンド文字列だけ組み立てる
+- `dist/shot-01-primary.mp4` などの予定ファイルを一覧化する
+- `run-log.md` は skeleton のみ出す
 
-- `manifest.json` は wide だけを指す
-- vertical side output を使うには consumer 側に aspect-aware asset selection を追加する必要がある
+## Handoff
+
+全ショットの primary output が揃ったら、Orchestrator は Gate 2 へ進む。

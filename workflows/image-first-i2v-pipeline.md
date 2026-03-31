@@ -1,222 +1,100 @@
-# Workflow: Image-First I2V Pipeline
+# Workflow: Image-First I2V Shot Generator
 
-Nano Banana（または外部画像生成）でリファレンス画像を先に作り、
-PixVerse I2V でアニメーション化する。
-**世界観の統一**が最優先の案件で使う。
+`meta.workflow: "i2v"` の storyboard を受け取り、参照画像の生成または読込を行ったうえで PixVerse I2V を実行する runbook。Orchestrator から Gate 1 承認後に呼ばれる前提。PixVerse ネイティブモデルは `v6` を標準とする。
 
----
+## Inputs
 
-## When to Use
+- `storyboard.yaml`
+- 任意のローカル参照画像
+- `dist/pipeline-state.json` があれば resume 情報
 
-| 条件 | T2V（従来） | Image-First I2V（本ワークフロー） |
-|------|------------|--------------------------------|
-| 色調・質感の一貫性 | ショット間でばらつきやすい | リファレンス画像で事前統一 |
-| アートディレクション | prompt 依存 | 画像で確認 → 承認後に動画化 |
-| リテイク | 全部やり直し | 画像だけ差し替えて再生成 |
-| コスト | 低（T2V のみ） | やや高（画像生成 + I2V） |
+## Outputs
 
-**推奨シーン:** ブランド映像、PV、紹介動画など世界観の統一が重要な案件
+- `dist/ref-shot-01.webp` などの reference still
+- `dist/shot-01-primary.mp4` などの primary asset
+- `dist/run-log.md`
+- `dist/pipeline-state.json`
 
----
+## Step 1: Preflight
 
-## Pipeline Overview
-
-```
-brief.md → storyboard.yaml
-    ↓
-[Step 1] Nano Banana で 7枚のリファレンス画像を並列生成
-    ↓
-[Step 2] 画像レビュー → 承認（リテイクはここで）
-    ↓
-[Step 3] PixVerse I2V で画像→動画を並列生成
-    ↓
-[Step 4] manifest.json + Remotion 合成
-```
-
----
-
-## Step 1: リファレンス画像の生成
-
-### 1a. プロンプト組み立て
-
-storyboard の各 shot から以下を組み立てる:
-
-```text
-[shot.prompt の被写体・環境・ライティング],
-[shot.framing に対応するキーワード（wide shot, close-up, etc.）],
-[meta.style_notes（全ショット共通）],
-cinematic film still
-```
-
-**重要:** camera movement はここでは入れない（静止画なので）。
-
-### 1b. Nano Banana で生成
-
-```
-mcp__nano-banana-2__generate_image:
-  prompt: <assembled_prompt>
-  aspectRatio: "16:9"
-  quality: "quality"
-  purpose: "Reference image for AI video generation - cinematic film still"
-  fileName: "shot-{NN}-ref"
-```
-
-- 全ショット **並列で** 生成する
-- 出力先: `ref-images/shot-{NN}-ref.png`
-- `meta.style_notes` を全画像で共通に保つことで色調統一
-
-### 1c. 画像レビュー
-
-全画像を Read ツールで表示し、以下を確認:
-- 色調アークが storyboard の `color_temp` と合致しているか
-- フレーミングが shot の `framing` と一致しているか
-- 被写体が prompt の意図通りか
-
-問題があるショットだけ再生成。全体の整合性が取れたら Step 2 へ。
-
----
-
-## Step 2: PixVerse I2V 生成
-
-### 2a. プロンプト組み立て（I2V 用）
-
-```text
-[camera_movement_text（語彙テーブルから）],
-[shot.prompt の動きとアクション要素],
-[meta.style_notes],
-avoiding: [meta.prompt_negative]
-```
-
-**ポイント:** I2V では画像が被写体・色・構図を担うので、prompt は **動き** にフォーカスする。
-
-### 2b. 並列生成（同時実行数に注意）
+T2V と同じく、まず認証と残高を確認する。
 
 ```bash
-pixverse create video \
-  --image ref-images/shot-{NN}-ref.png \
-  --prompt "<i2v_prompt>" \
-  --duration <sec> \
-  --aspect-ratio 16:9 \
-  --quality 1080p \
+pixverse auth status --json
+pixverse account info --json
+```
+
+## Step 1.5: Reference Still Handling
+
+`image_ref` ごとの扱い:
+
+- `"generate"`: PixVerse image generation を使う
+- ローカルパス: そのまま参照する
+- `null`: storyboard 不備として Director へ差し戻す
+
+生成時コマンド:
+
+```bash
+pixverse create image \
+  --prompt "<shot.prompt>" \
+  --model "<meta.image_generation.model>" \
+  --quality "<meta.image_generation.quality>" \
+  --aspect-ratio "<meta.image_generation.aspect_ratio>" \
   --json
 ```
 
-- PixVerse Pro の同時生成上限は **5本**
-- 6本以上ある場合は最初の5本を並列 → 完了後に残りをリトライ
-- exit code `500044`（concurrent limit）→ 他の生成完了後に再実行
+download 後は `dist/ref-shot-01.webp` の形へ揃える。
 
-### 2c. ダウンロード → リネーム
+## Gate 1.5
 
-```bash
-DEST="<remotion-project>/public/assets/video"
-curl -sL "<video_url>" -o "$DEST/shot-{NN}-wide.mp4"
-```
+参照画像が生成されたら Orchestrator は以下を提示する。
 
-I2V の出力は `video_url` から直接 curl でダウンロードするのが最速。
-`pixverse asset download` でも可。
+- shot ごとの ref image
+- image generation 実績クレジット
+- 再生成対象 shot の指定方法
 
----
+承認後のみ動画生成へ進む。
 
-## Step 3: オーディオ生成（推奨セット）
-
-画像先行ワークフローではオーディオも同時に整える:
-
-### BGM — ElevenLabs Music
-
-```
-mcp__elevenlabs__compose_music:
-  prompt: <style に合わせた BGM プロンプト>
-  music_length_ms: <total_duration * 1000>
-```
-
-### ナレーション — ElevenLabs TTS
-
-```
-mcp__elevenlabs__text_to_speech:
-  text: <各フレーズ>
-  voice_name: <日本語対応の voice>
-  model_id: eleven_multilingual_v2
-  language: ja
-  stability: 0.6
-  similarity_boost: 0.8
-  speed: 0.85-0.9
-```
-
-**Tips:**
-- 日本語ナレーションは `eleven_multilingual_v2` + `language: ja` が必須
-- PixVerse TTS は lip-sync 用（既存動画が必要）なので、独立ナレーションには使えない
-- `stability: 0.6` で自然なイントネーション、`speed: 0.85` でゆったりした語り
-
-### SFX — ElevenLabs Sound Effects
-
-```
-mcp__elevenlabs__text_to_sound_effects:
-  text: <効果音の説明>
-  duration_seconds: <sec>
-```
-
----
-
-## Step 4: Remotion 合成
-
-### 4a. manifest.json 更新
-
-- `scenes[]` の `assets.videoSrc` を新しい I2V クリップに更新
-- `audio.src` を BGM ファイルに更新
-- timing（`startFrame`, `durationInFrames`）を再計算
-
-### 4b. ShotpackPlayer.tsx にオーディオ追加
-
-```tsx
-{/* BGM */}
-<Audio
-  src={staticFile(`${AUDIO_BASE}/bgm.mp3`)}
-  volume={(f) => {
-    const fadeIn = interpolate(f, [0, fps * 2], [0, 0.4], { extrapolateRight: "clamp" });
-    const fadeOut = interpolate(f, [totalFrames - fps * 3, totalFrames], [0.4, 0],
-      { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-    return Math.min(fadeIn, fadeOut);
-  }}
-/>
-
-{/* Narration */}
-<Sequence from={Math.round(fps * startSec)} name="Narration NN">
-  <Audio src={staticFile(`${AUDIO_BASE}/narration/narration-NN.mp3`)} volume={0.9} />
-</Sequence>
-
-{/* SFX */}
-<Sequence from={0} durationInFrames={fps * 5} name="SFX: Wind">
-  <Audio src={staticFile(`${AUDIO_BASE}/sfx/wind-ambient.mp3`)} volume={0.3} />
-</Sequence>
-```
-
-### 4c. レンダリング
+## Step 2: Submit I2V Jobs
 
 ```bash
-pnpm run build
-# or: remotion render src/index.ts ShotpackPlayer out/shotpack.mp4
+pixverse create video \
+  --prompt "<shot.prompt>" \
+  --image "dist/ref-shot-01.webp" \
+  --model "<shot.model>" \
+  --quality "<shot.quality>" \
+  --duration <shot.duration> \
+  --aspect-ratio "<shot.aspect_ratio>" \
+  $( [ "<shot.audio>" = "true" ] && echo "--audio" ) \
+  $( [ "<shot.multi_shot>" = "true" ] && echo "--multi-shot" ) \
+  --no-wait \
+  --json
 ```
 
----
+## Step 3: Wait / Retry / Download
 
-## Checklist
+基本方針は T2V と同じ。違いは以下。
 
-- [ ] 全リファレンス画像の色調が `meta.color_arc` に沿っている
-- [ ] `meta.style_notes` が全画像で共通
-- [ ] I2V prompt は動き（camera movement）にフォーカスしている
-- [ ] 並列生成で同時実行上限（5本）を超えていない
-- [ ] ナレーションは `eleven_multilingual_v2` + `language: ja`
-- [ ] BGM の volume は 0.3-0.5（ナレーションを邪魔しない）
-- [ ] manifest.json の timing が連続している（gap/overlap なし）
+- retry は ref image を保持したまま video job だけ再投入する
+- `generation_failed` が ref image に起因する場合だけ Gate 1.5 へ戻す
+- 参照画像と動画の対応を `run-log.md` に明示する
+- `v6` の `multi_shot` は内部カメラ遷移を足したい shot にだけ使う
 
----
+## Naming Rules
 
-## 参考プロファイル
+- reference still: `dist/ref-shot-01.webp`
+- primary video: `dist/shot-01-primary.mp4`
+- vertical side output: `dist/vertical/shot-01-secondary.mp4`
 
-### sample-launch-film
+## Dry Run
 
-- 7ショット / 26秒 / 16:9
-- 画像生成 → PixVerse v5.6 I2V
-- オーディオ構成例: ambient BGM + 日本語 TTS + SFX
-- 期待効果: T2V 単体より色調・質感を統一しやすい
-- クレジット目安: ~560 cr（I2V は T2V より低コストになりやすい）
+dry run では以下を出す。
+
+- reference still 生成予定コマンド
+- video 生成予定コマンド
+- Gate 1.5 の提示項目
+- 予想ファイル一覧
+
+## Handoff
+
+全ショットの primary output が揃ったら、Orchestrator は Gate 2 へ進む。

@@ -1,0 +1,53 @@
+{
+  "pipeline_id": "sp-20260330-143022",
+  "total_credits_consumed": 738,
+  "breakdown": {
+    "shot_generation": 650,
+    "image_generation": 6,
+    "post_processing": {
+      "extend": 46,
+      "upscale": 12,
+      "sound": 24,
+      "speech": 0
+    }
+  },
+  "per_shot": [
+    {
+      "shot_id": "shot-01",
+      "credits": 73,
+      "retries": 0,
+      "model": "v6"
+    },
+    {
+      "shot_id": "shot-02",
+      "credits": 73,
+      "retries": 0,
+      "model": "v6"
+    },
+    {
+      "shot_id": "shot-03",
+      "credits": 128,
+      "retries": 0,
+      "model": "v6"
+    },
+    {
+      "shot_id": "shot-04",
+      "credits": 101,
+      "retries": 0,
+      "model": "v6"
+    },
+    {
+      "shot_id": "shot-05",
+      "credits": 116,
+      "retries": 1,
+      "model": "v6"
+    },
+    {
+      "shot_id": "shot-06",
+      "credits": 247,
+      "retries": 0,
+      "model": "v6"
+    }
+  ],
+  "account_balance_after": 34063
+}

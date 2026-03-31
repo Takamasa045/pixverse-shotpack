@@ -1,130 +1,132 @@
 # Starter storyboard for a new project.
-# 編集してそのまま使える汎用サンプル。具体例は examples/ 配下を参照。
+# このファイルは Director の出力契約をそのまま表す最小テンプレート。
 
 meta:
   title: "generic-launch-film"
   fps: 30
   aspects: ["16:9"]
-  style_notes: "[overall look, finish, palette, texture, lens feel]"
-  color_arc: cool-to-warm
-  prompt_negative: "blurry, distorted faces, jerky motion, morphing, flickering, text, watermark, oversaturated"
+  style_notes: "[overall tone, texture, pacing, atmosphere]"
+  color_arc: "cool-to-warm"
+  prompt_negative: "blurry, distorted faces, watermark"
+  workflow: "t2v"
 
-# Composition Summary:
-#   Total: ~25s / 6 shots
-#   Act 1 (Hook):       shot-01 + shot-02 = 5s  (20%)
-#   Act 2 (Body):       shot-03〜shot-05  = 12s (48%)
-#   Act 3 (Resolution): shot-06           = 8s  (32%)
-#   Duration variance:  2s : 8s = 1:4 ✓
-#   Camera variety: 6 distinct movements ✓
+# workflow が i2v の場合のみ有効
+# image_generation:
+#   model: "seedream-5.0-lite"
+#   quality: "1800p"
+#   aspect_ratio: "16:9"
 
 shots:
-  # === Act 1: Hook ===
-
-  - id: shot-01
-    type: video
+  - id: "shot-01"
     prompt: >-
-      Wide establishing shot of [environment or location],
-      [time of day] light, [weather or atmosphere],
-      premium cinematic opening mood
-    duration: 3
-    model: v5.6
-    quality: 1080p
-    hero: true
-    act: 1
-    framing: wide
-    color_temp: cool
-    transition: crossfade
-    camera:
-      movement: aerial-drift
-    objective: "Establish world"
-    emotion: "curiosity"
-    motif: "environment"
-
-  - id: shot-02
-    type: video
-    prompt: >-
-      Extreme close-up of [surface, material, or signature detail],
-      shallow depth of field, soft directional light,
-      tactile visual hook
-    duration: 2
-    act: 1
-    framing: extreme-close-up
-    color_temp: cool
-    transition: cut
-    camera:
-      movement: static
-    objective: "Introduce texture"
-    emotion: "intimacy"
-    motif: "detail"
-
-  # === Act 2: Body ===
-
-  - id: shot-03
-    type: video
-    prompt: >-
-      Close-up of [hero object, product, or prop] in its natural setting,
-      practical lighting, subtle atmospheric motion,
-      focused premium composition
+      Quiet opening wide shot of [location or environment],
+      restrained light, clean negative space,
+      cinematic atmosphere with tactile detail
+    model: "v6"
+    quality: "1080p"
     duration: 4
-    act: 2
-    framing: close-up
-    color_temp: neutral
-    transition: cut
-    camera:
-      movement: dolly-in
-    objective: "Present core motif"
-    emotion: "attention"
-    motif: "hero-object"
+    aspect_ratio: "16:9"
+    audio: false
+    multi_shot: false
+    image_ref: null
+    post_process:
+      extend: null
+      upscale: null
+      sound: null
+      speech: null
+    notes: "Establish world and visual tone."
 
-  - id: shot-04
-    type: video
+  - id: "shot-02"
     prompt: >-
-      Hands or silhouette interacting with [hero object or interface],
-      layered foreground and background elements,
-      purposeful action in progress
-    duration: 3
-    act: 2
-    framing: medium-close
-    color_temp: neutral
-    transition: cut
-    camera:
-      movement: pan-right
-    objective: "Show interaction"
-    emotion: "focus"
-    motif: "interaction"
+      Close detail study of [material or object],
+      soft directional light and shallow depth,
+      delicate movement in a quiet frame
+    model: "v6"
+    quality: "1080p"
+    duration: 4
+    aspect_ratio: "16:9"
+    audio: false
+    multi_shot: false
+    image_ref: null
+    post_process:
+      extend: null
+      upscale: null
+      sound: null
+      speech: null
+    notes: "Move from atmosphere into tactile detail."
 
-  - id: shot-05
-    type: video
+  - id: "shot-03"
     prompt: >-
-      Medium shot of [hero scene or process moment],
-      controlled light contrast, atmospheric depth,
-      momentum building toward the main payoff
+      Hero reveal of [main subject],
+      composed center frame, subtle motion,
+      premium editorial feeling with controlled highlights
+    model: "v6"
+    quality: "1080p"
     duration: 5
-    act: 2
-    framing: medium
-    color_temp: neutral
-    transition: cut
-    camera:
-      movement: tracking
-    objective: "Build momentum"
-    emotion: "confidence"
-    motif: "process"
+    aspect_ratio: "16:9"
+    audio: true
+    multi_shot: true
+    image_ref: null
+    post_process:
+      extend: null
+      upscale: null
+      sound: null
+      speech: null
+    notes: "First clear presentation of the hero subject."
 
-  # === Act 3: Resolution ===
-
-  - id: shot-06
-    type: video
+  - id: "shot-04"
     prompt: >-
-      Wide or medium-wide resolving shot of [final environment or hero frame],
-      richer warm tones, lingering atmosphere,
-      calm memorable ending image
+      Human interaction with [main subject],
+      measured gesture, layered foreground and background,
+      calm motion with space around the action
+    model: "v6"
+    quality: "1080p"
+    duration: 4
+    aspect_ratio: "16:9"
+    audio: true
+    multi_shot: false
+    image_ref: null
+    post_process:
+      extend: null
+      upscale: null
+      sound: null
+      speech: null
+    notes: "Show function or presence without crowding the frame."
+
+  - id: "shot-05"
+    prompt: >-
+      Mid-sequence momentum shot with the subject in use,
+      refined camera energy, atmospheric background,
+      visual confidence without excessive spectacle
+    model: "v6"
+    quality: "1080p"
+    duration: 5
+    aspect_ratio: "16:9"
+    audio: true
+    multi_shot: true
+    image_ref: null
+    post_process:
+      extend: null
+      upscale: null
+      sound: null
+      speech: null
+    notes: "Build toward the final hold."
+
+  - id: "shot-06"
+    prompt: >-
+      Closing frame with warm settling light and generous negative space,
+      the subject resting in a memorable final composition,
+      calm premium ending with afterglow
+    model: "v6"
+    quality: "1080p"
     duration: 8
-    act: 3
-    framing: wide
-    color_temp: warm
-    transition: cut
-    camera:
-      movement: dolly-out
-    objective: "Closing hold"
-    emotion: "resolution"
-    motif: "signature-frame"
+    aspect_ratio: "16:9"
+    audio: true
+    multi_shot: false
+    image_ref: null
+    post_process:
+      extend: null
+      upscale: null
+      sound: null
+      speech: null
+    notes: "Longer ending hold with wabi-sabi restraint."

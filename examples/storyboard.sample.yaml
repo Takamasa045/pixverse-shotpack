@@ -3,119 +3,126 @@ meta:
   fps: 30
   aspects: ["16:9", "9:16"]
   style_notes: "premium editorial, warm neutrals, soft charcoal contrast, tactile materials, shallow depth of field, subtle film grain"
-  color_arc: cool-to-warm
-  prompt_negative: "blurry, distorted hands, jerky motion, morphing, flickering, text, watermark, oversaturated"
+  color_arc: "cool-to-warm"
+  prompt_negative: "blurry, distorted faces, watermark, oversaturated, warped hands"
+  workflow: "i2v"
 
-# Composition Summary:
-#   Total: ~25s / 6 shots
-#   Act 1 (Hook):       shot-01 + shot-02 = 5s  (20%)
-#   Act 2 (Body):       shot-03〜shot-05  = 12s (48%)
-#   Act 3 (Resolution): shot-06           = 8s  (32%)
-#   Duration variance:  2s : 8s = 1:4 ✓
-#   Camera variety: 6 distinct movements ✓
+image_generation:
+  model: "seedream-5.0-lite"
+  quality: "1800p"
+  aspect_ratio: "16:9"
 
 shots:
-  - id: shot-01
-    type: video
+  - id: "shot-01"
     prompt: >-
-      Wide shot of a quiet studio interior at first light,
+      Quiet studio interior at first light,
       hero product resting on a central plinth,
-      soft haze and premium architectural atmosphere
-    duration: 3
-    model: v5.6
-    quality: 1080p
-    hero: true
-    act: 1
-    framing: wide
-    color_temp: cool
-    transition: crossfade
-    camera:
-      movement: aerial-drift
-    objective: "Establish world"
-    emotion: "curiosity"
-    motif: "environment"
-
-  - id: shot-02
-    type: video
-    prompt: >-
-      Extreme close-up of brushed metal and textured fabric surfaces,
-      grazing light revealing fine detail,
-      tactile premium material study
-    duration: 2
-    act: 1
-    framing: extreme-close-up
-    color_temp: cool
-    transition: cut
-    camera:
-      movement: static
-    objective: "Introduce texture"
-    emotion: "intimacy"
-    motif: "material-detail"
-
-  - id: shot-03
-    type: video
-    prompt: >-
-      Close-up hero shot of the product on a matte pedestal,
-      controlled practical lighting, subtle atmosphere,
-      premium editorial composition
+      calm architectural atmosphere with generous negative space
+    model: "v6"
+    quality: "1080p"
     duration: 4
-    act: 2
-    framing: close-up
-    color_temp: neutral
-    transition: cut
-    camera:
-      movement: dolly-in
-    objective: "Present hero product"
-    emotion: "attention"
-    motif: "hero-product"
+    aspect_ratio: "16:9"
+    audio: false
+    multi_shot: false
+    image_ref: "generate"
+    post_process:
+      extend: null
+      upscale: null
+      sound: null
+      speech: null
+    notes: "Opening wide shot. Let the still carry the composition and let motion stay restrained."
 
-  - id: shot-04
-    type: video
+  - id: "shot-02"
     prompt: >-
-      Hands carefully placing and adjusting the product inside a quiet studio,
-      layered foreground shapes, deliberate motion,
-      tactile interaction in progress
-    duration: 3
-    act: 2
-    framing: medium-close
-    color_temp: neutral
-    transition: cut
-    camera:
-      movement: pan-right
-    objective: "Show interaction"
-    emotion: "focus"
-    motif: "handoff"
+      Brushed metal and textured fabric seen in a tactile close detail,
+      grazing light revealing fine surface variations,
+      intimate premium material study
+    model: "v6"
+    quality: "1080p"
+    duration: 4
+    aspect_ratio: "16:9"
+    audio: false
+    multi_shot: false
+    image_ref: "generate"
+    post_process:
+      extend: null
+      upscale: null
+      sound: null
+      speech: null
+    notes: "Detail shot. Keep movement minimal and elegant."
 
-  - id: shot-05
-    type: video
+  - id: "shot-03"
     prompt: >-
-      Medium shot of the product in use within a calm interior setting,
-      subtle reflections, atmospheric depth,
-      poised momentum before the final reveal
+      Hero product isolated in a refined editorial composition,
+      controlled practical lighting and soft atmosphere,
+      premium reveal with clear silhouette
+    model: "v6"
+    quality: "1080p"
     duration: 5
-    act: 2
-    framing: medium
-    color_temp: neutral
-    transition: cut
-    camera:
-      movement: tracking
-    objective: "Build usage context"
-    emotion: "confidence"
-    motif: "usage"
+    aspect_ratio: "16:9"
+    audio: true
+    multi_shot: true
+    image_ref: "generate"
+    post_process:
+      extend: null
+      upscale: "4k"
+      sound: null
+      speech: null
+    notes: "Primary hero shot. Candidate for upscale after approval."
 
-  - id: shot-06
-    type: video
+  - id: "shot-04"
     prompt: >-
-      Wide closing frame of the product and surrounding space,
+      Hands carefully placing and adjusting the product inside the studio,
+      layered foreground shapes and measured motion,
+      tactile interaction without showing readable text
+    model: "v6"
+    quality: "1080p"
+    duration: 4
+    aspect_ratio: "16:9"
+    audio: true
+    multi_shot: false
+    image_ref: "generate"
+    post_process:
+      extend: null
+      upscale: null
+      sound: "soft fabric touch and subtle room tone"
+      speech: null
+    notes: "Human interaction shot. Hands must stay believable."
+
+  - id: "shot-05"
+    prompt: >-
+      Product in use within a calm interior setting,
+      subtle reflections and atmospheric depth,
+      poised momentum before the final reveal
+    model: "v6"
+    quality: "1080p"
+    duration: 5
+    aspect_ratio: "16:9"
+    audio: true
+    multi_shot: true
+    image_ref: "generate"
+    post_process:
+      extend: null
+      upscale: null
+      sound: null
+      speech: null
+    notes: "Use a longer shot to establish confidence and continuity."
+
+  - id: "shot-06"
+    prompt: >-
+      Final frame of the product and surrounding space,
       warmer tones settling into the scene,
-      calm premium ending image with lingering atmosphere
+      calm premium ending image with lingering afterglow
+    model: "v6"
+    quality: "1080p"
     duration: 8
-    act: 3
-    framing: wide
-    color_temp: warm
-    transition: cut
-    camera:
-      movement: dolly-out
-    objective: "Closing hold"
-    emotion: "resolution"
-    motif: "signature-frame"
+    aspect_ratio: "16:9"
+    audio: true
+    multi_shot: false
+    image_ref: "generate"
+    post_process:
+      extend: 2
+      upscale: null
+      sound: "soft air movement and distant architectural resonance"
+      speech: null
+    notes: "Closing hold. Lean into wabi-sabi restraint and generous negative space."

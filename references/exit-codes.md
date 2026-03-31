@@ -1,77 +1,55 @@
-# PixVerse CLI Exit Codes + Retry Logic
+# PixVerse CLI Exit Codes
 
-PixVerse CLI 1.0.3 を前提にした retry 方針。
-CLI の validation 上限は `10s` だが、この skill は **実行前に `8s` cap** を入れる。
+本リポジトリでは、PixVerse CLI の終了コードを shot-generator / post-processor の状態遷移へそのままマッピングする。
 
-## Exit Code Table
+## Authoritative Mapping
 
-| Code | Name | 意味 | エージェントのアクション |
-|------|------|------|------------------------|
-| 0 | Success | コマンド成功 | 続行。JSON から ID とメタデータを保持 |
-| 1 | General Error | 予期しないエラー | ログに記録。必要なら 1 回だけ retry |
-| 2 | Unknown Error | 不明なエラー | ログに記録して skip。retry しない |
-| 3 | Auth Error | トークン期限切れ | `pixverse auth login --json` → 元コマンドを 1 回だけ retry |
-| 4 | Credits Exhausted | クレジット不足 | **即停止**。生成済み分だけで部分レポートを出す |
-| 5 | Generation Failed | 生成処理の失敗 | 同条件で **1 回だけ** retry |
-| 6 | Validation Error | パラメータ不正 | エラー内容を補正して **1 回だけ** retry |
+| Exit code | 意味 | Sub-agent の動作 | Orchestrator への報告 |
+|-----------|------|------------------|----------------------|
+| `0` | 成功 | 次の処理へ進む | 最終集計のみ |
+| `2` | timeout | timeout を倍増して 1 回だけ再試行 | 再試行後も失敗なら `timeout_exhausted` |
+| `3` | auth expired | `pixverse auth login` 後に 1 回だけ再試行 | 再認証後も失敗なら `auth_failed` |
+| `4` | out of credits | 即時停止。未投入ショットは実行しない | `credit_insufficient` |
+| `5` | generation failed | `prompt_negative` 補強で最大 2 回再投入 | 2 回失敗で `generation_failed` |
+| `6` | validation error | パラメータをログへ残して停止 | `validation_error` |
 
-## Decision Flow
+## Handling Notes
 
-```text
-コマンド実行
-  │
-  ├─ exit 0 → 成功。ID を記録して次へ
-  │
-  ├─ exit 3 → 認証回復
-  │    ├─ pixverse auth login --json
-  │    ├─ pixverse account info --json で .email を確認
-  │    └─ 元コマンドを 1 回だけ再試行
-  │
-  ├─ exit 4 → クレジット不足
-  │    ├─ pixverse account info --json で .credits.total を再取得
-  │    ├─ 生成済みショットだけで manifest / log / credits report を出す
-  │    └─ 停止
-  │
-  ├─ exit 5 → 生成失敗
-  │    ├─ retry_count < 1 → 同条件で再試行
-  │    └─ retry_count >= 1 → skip
-  │
-  ├─ exit 6 → バリデーションエラー
-  │    ├─ duration > 8 → 8 に cap
-  │    ├─ duration > 10 → まず 8 に cap
-  │    ├─ invalid aspect ratio → 16:9 に戻す
-  │    ├─ invalid ID → 数値 ID を使っているか確認
-  │    └─ 1 回だけ再試行
-  │
-  └─ exit 1 / 2 → ログに残して終了または skip
-```
+### exit 2
 
-## 認証回復手順
+- `pixverse task wait <id> --json --timeout 300`
+- failure 時のみ `--timeout 600` で 1 回再試行
+
+### exit 3
 
 ```bash
-pixverse auth login --json
-pixverse account info --json
+pixverse auth login
+pixverse auth status --json
 ```
 
-確認ポイント:
+- 認証復旧後に元コマンドを 1 回だけ再実行する
 
-- `email` が返る
-- `credits.total` が取得できる
+### exit 4
 
-## よくある Validation Error (exit 6)
+- 以降の shot は投入しない
+- `run-log.md` と `pipeline-state.json` に残高と消費済み credits を保存する
 
-| エラーメッセージ例 | 原因 | 修正方法 |
-|-------------------|------|---------|
-| `duration must be between 1 and 10` | duration 超過 | skill 側では 8 に cap して再試行 |
-| `invalid aspect ratio` | サポート外比率 | `16:9` / `9:16` / `1:1` のいずれかに変更 |
-| `prompt is required` | prompt 空 | storyboard / prompt assembly を確認 |
-| `image file not found` | I2V 画像パス不正 | パス存在確認 |
-| `too many keyframes` | transition の画像が多すぎる | 2 枚に絞る |
-| `Invalid ID — must be a number` | `task wait` / download の ID 不正 | 数値 ID を渡す |
+### exit 5
 
-## Retry Budget
+- retry ごとに `run-log.md` へ理由を書く
+- 同一 `shot_id` への再投入は最大 2 回
+- Gate 2 では permanent failure を個別に明示する
 
-- 1 ショットあたり最大 **1 回**
-- exit 4 は retry しない
-- exit 2 は retry しない
-- wide pass と vertical pass は予算を分けて扱う
+### exit 6
+
+- value correction はその場では行わない
+- Director / storyboard 側の修正事項として戻す
+- 代表例: invalid duration, invalid aspect ratio, missing image path
+
+## Other Errors
+
+`1` や未知のコードは infrastructure error 扱いにする。
+
+- `pipeline-state.json` を更新
+- 生成済みファイルは保持
+- 後日再開可能な状態で停止

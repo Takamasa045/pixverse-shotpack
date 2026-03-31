@@ -2,81 +2,62 @@
 
 [English README](./README.md)
 
-PixVerse CLI を使って、`brief.md` や `storyboard.yaml` のような構造化入力から、Remotion で使いやすいショットパックと `manifest.json` を作るための再利用可能なワークフローです。
+PixVerse CLI ベースの shotpack ワークフローを、Orchestrator + 4 つのサブエージェント構成で運用するためのドキュメント集です。`brief.md` または `storyboard.yaml` から始めて、Gate 承認を挟みながら `dist/manifest.json` と `dist/credits-report.json` まで整えます。
 
-## 一言でいうと
+2026年3月31日時点では、PixVerse ネイティブモデルの既定値を `v6` として扱います。旧 `v5.6` は fallback とし、価格と制約の出典は `references/` に寄せています。
 
-企画メモから毎回その場で手順を組み立てるのではなく、PixVerse CLI で安定して動画ショットを作るための再利用可能な型です。
+## アーキテクチャ
 
-## できること
+```text
+Orchestrator
+  -> Director
+  -> Gate 1
+  -> Shot Generator
+  -> Gate 1.5 (i2v only)
+  -> Gate 2
+  -> Post-Processor
+  -> Assembler
+```
 
-- 汎用の `brief.md` スターターを使える
-- 汎用の `storyboard.yaml` スターターを使える
-- エージェント向けの skill 定義を `SKILL.md` で使える
-- T2V の標準フローを使える
-- 画像先行 I2V の標準フローを使える
-- 中立なサンプル入力と manifest 例を参照できる
+責務分離の目的:
 
-## 全体の流れ
+- creative 判断と CLI 実行を混ぜない
+- クレジット消費前に必ず承認を挟む
+- `dist/pipeline-state.json` を使って中断再開できるようにする
 
-1. `brief.md` または `storyboard.yaml` を用意する
-2. PixVerse CLI でショットを生成する
-3. 出力ファイルを一定ルールで整理する
-4. 下流の Remotion consumer 用に `manifest.json` を作る
+## 最初に見るファイル
 
-つまり:
+1. [SKILL.md](./SKILL.md)
+2. [workflows/orchestrator-flow.md](./workflows/orchestrator-flow.md)
+3. [brief.md](./brief.md) または [storyboard.yaml](./storyboard.yaml)
 
-`brief.md` -> `storyboard.yaml` -> PixVerse CLI -> `manifest.json`
+## ワークフロー選択
 
-## どのワークフローを使うか
+| workflow | 用途 | 参照 |
+|---------|------|------|
+| `t2v` | まず速く作りたい | `workflows/pixverse-shotpack.md` |
+| `i2v` | 世界観の統一を優先したい | `workflows/image-first-i2v-pipeline.md` |
 
-### T2V Shotpack
+## ディレクトリ
 
-まず速く作りたいときに使います。
+| パス | 説明 |
+|------|------|
+| `skills/` | サブエージェントごとの責務定義 |
+| `workflows/` | フェーズごとの実行手順 |
+| `references/` | manifest・終了コード・制約・見積もりの参照資料 |
+| `examples/` | state / report / log を含むサンプル |
+| `dist/` | 生成結果の出力先 |
 
-参照: `workflows/pixverse-shotpack.md`
+## 主な出力
 
-### Image-First I2V
+- `dist/scene-01.mp4` などの primary asset
+- `dist/vertical/*.mp4` の side output
+- `dist/audio/shotpack-placeholder.wav`
+- `dist/manifest.json`
+- `dist/credits-report.json`
+- `dist/run-log.md`
+- `dist/pipeline-state.json`
 
-世界観の統一感を優先したいときに使います。先に reference still を作って確認し、その後 PixVerse I2V で動画化します。
+## 互換性に関する注意
 
-参照: `workflows/image-first-i2v-pipeline.md`
-
-## 最初に触るファイル
-
-1. `brief.md` を開いてプレースホルダを埋める
-2. または `storyboard.yaml` を直接編集する
-3. `workflows/pixverse-shotpack.md` に沿って実行する
-4. 画像先行の派生フローが必要な場合のみ `workflows/image-first-i2v-pipeline.md` を使う
-
-参考サンプル:
-
-- `examples/brief.example.md`
-- `examples/storyboard.sample.yaml`
-- `examples/manifest.example.json`
-
-## 主なファイル
-
-| ファイル | 説明 |
-|---------|------|
-| `SKILL.md` | エージェント向けの skill 定義 |
-| `brief.md` | 新規案件用の brief スターター |
-| `storyboard.yaml` | 新規案件用の storyboard スターター |
-| `examples/` | 中立なサンプル |
-| `workflows/` | 実行手順 |
-| `references/` | manifest 仕様や exit code の補足 |
-
-## 出力
-
-このワークフローで生成されるもの:
-
-- PixVerse で生成した clips / stills（`dist/` に配置）
-- 下流 consumer が `manifest.audio.src` を必要とする場合の placeholder audio
-- `references/manifest-schema.md` の仕様に沿った `dist/manifest.json`
-
-## 前提
-
-- primary 出力は `16:9`
-- `9:16` は second pass で追加可能
-- PixVerse CLI コマンドは `--json` 前提
-- image model 名は固定せず CLI help で確認する
+`dist/manifest.json` は、既存 Remotion consumer が読む `RenderManifest` 互換を維持します。要件定義で欲しい追加の運用情報は `pipeline-state.json` と `credits-report.json` に逃がし、consumer 契約は壊しません。

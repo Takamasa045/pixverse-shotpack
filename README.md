@@ -2,82 +2,62 @@
 
 [日本語版 README](./README.ja.md)
 
-A reusable PixVerse CLI workflow for creating Remotion-ready shot packs from structured inputs like `brief.md` or `storyboard.yaml`.
+This repository documents an Orchestrator-led PixVerse shotpack workflow. Start from `brief.md` or `storyboard.yaml`, move through approval gates, and finish with `dist/manifest.json`, `dist/credits-report.json`, and resumable pipeline state.
 
-## In One Sentence
+As of March 31, 2026, this repo treats PixVerse-native `v6` as the preferred default model. Legacy `v5.6` remains the fallback, and source-backed limits and pricing live under `references/`.
 
-Use this when you want a documented, repeatable pattern for going from creative planning documents to AI-generated video shots, without rebuilding the workflow each time.
+## Architecture
 
-## What You Get
+```text
+Orchestrator
+  -> Director
+  -> Gate 1
+  -> Shot Generator
+  -> Gate 1.5 (i2v only)
+  -> Gate 2
+  -> Post-Processor
+  -> Assembler
+```
 
-- a generic `brief.md` starter
-- a generic `storyboard.yaml` starter
-- an agent-facing skill spec (`SKILL.md`)
-- a standard T2V workflow
-- an image-first I2V workflow for stronger visual consistency
-- neutral examples for input and manifest output
+Goals of the split:
 
-## How It Works
-
-1. Start with `brief.md` or `storyboard.yaml`
-2. Use PixVerse CLI to generate shots
-3. Rename and organize outputs predictably
-4. Build `manifest.json` for a downstream Remotion consumer
-
-In short:
-
-`brief.md` -> `storyboard.yaml` -> PixVerse CLI -> `manifest.json`
-
-## Choose a Workflow
-
-### T2V Shotpack
-
-Use this when speed matters more than visual consistency.
-
-See: `workflows/pixverse-shotpack.md`
-
-### Image-First I2V
-
-Use this when visual consistency matters more than speed.
-Generate reference stills first, review them, then animate them with PixVerse I2V.
-
-See: `workflows/image-first-i2v-pipeline.md`
+- keep creative planning separate from CLI execution
+- force human approval before credit-consuming steps
+- preserve resumability through `dist/pipeline-state.json`
 
 ## Start Here
 
-1. Open `brief.md` and replace the placeholder text with your project details
-2. Or edit `storyboard.yaml` directly if you already know your shots
-3. Follow `workflows/pixverse-shotpack.md`
-4. Use `workflows/image-first-i2v-pipeline.md` only if you want the image-first extension
+1. [SKILL.md](./SKILL.md)
+2. [workflows/orchestrator-flow.md](./workflows/orchestrator-flow.md)
+3. [brief.md](./brief.md) or [storyboard.yaml](./storyboard.yaml)
 
-Reference examples:
+## Workflow Modes
 
-- `examples/brief.example.md`
-- `examples/storyboard.sample.yaml`
-- `examples/manifest.example.json`
+| workflow | Use when | Reference |
+|---------|----------|-----------|
+| `t2v` | speed matters most | `workflows/pixverse-shotpack.md` |
+| `i2v` | visual consistency matters most | `workflows/image-first-i2v-pipeline.md` |
 
-## Key Files
+## Key Directories
 
-| File | Description |
-|------|-------------|
-| `SKILL.md` | Agent-facing skill definition |
-| `brief.md` | Generic brief starter |
-| `storyboard.yaml` | Generic storyboard starter |
-| `examples/` | Neutral sample files |
-| `workflows/` | Step-by-step execution docs |
-| `references/` | Manifest schema and exit codes |
+| Path | Purpose |
+|------|---------|
+| `skills/` | per-sub-agent responsibility files |
+| `workflows/` | phase runbooks |
+| `references/` | manifest, exit code, model, and credit contracts |
+| `examples/` | sample state, report, and log files |
+| `dist/` | generated outputs |
 
-## Output
+## Primary Outputs
 
-The workflow produces:
+- `dist/scene-01.mp4` and other primary assets
+- `dist/vertical/*.mp4` side outputs
+- `dist/audio/shotpack-placeholder.wav`
+- `dist/manifest.json`
+- `dist/credits-report.json`
+- `dist/run-log.md`
+- `dist/pipeline-state.json`
 
-- PixVerse-generated clips or stills in `dist/`
-- placeholder audio if the downstream consumer requires `manifest.audio.src`
-- `dist/manifest.json` following the contract in `references/manifest-schema.md`
+## Compatibility Note
 
-## Defaults
-
-- Primary output is `16:9`
-- `9:16` can be added as a second pass
-- All PixVerse CLI commands use `--json`
-- Image model names should be confirmed from CLI help, not hardcoded
+`dist/manifest.json` intentionally stays compatible with the existing Remotion consumer's `RenderManifest` contract. Extra pipeline metadata lives in `pipeline-state.json` and `credits-report.json` instead of changing the consumer boundary.

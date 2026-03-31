@@ -1,0 +1,21 @@
+{
+  "pipeline_id": "sp-20260330-143022",
+  "current_phase": "gate-2-shot-quality",
+  "started_at": "2026-03-30T14:30:22+09:00",
+  "phases_completed": [
+    "director",
+    "gate-1-storyboard",
+    "shot-generator"
+  ],
+  "phases_remaining": [
+    "gate-2-shot-quality",
+    "post-processor",
+    "assembler"
+  ],
+  "credits_consumed": 42,
+  "credits_budget": 50,
+  "retry_count": {
+    "shot-generator": 1
+  },
+  "errors": []
+}
