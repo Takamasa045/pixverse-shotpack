@@ -8,6 +8,29 @@ As of March 31, 2026, this repo treats PixVerse-native `v6` as the preferred def
 
 This repository does not include a Remotion project, Remotion runtime, or Node-based render pipeline. It is the producer-side workflow that prepares assets and a Remotion-compatible manifest for a separate consumer.
 
+## Quick Start
+
+1. Clone this repository.
+
+   ```bash
+   git clone https://github.com/Takamasa045/pixverse-shotpack.git
+   cd pixverse-shotpack
+   ```
+
+2. Make sure the PixVerse CLI is already installed in your environment.
+3. Authenticate and verify your account before running any workflow.
+
+   ```bash
+   pixverse auth login
+   pixverse auth status --json
+   pixverse account info --json
+   ```
+
+4. Prepare either `brief.md` or `storyboard.yaml`.
+5. Start with `SKILL.md`, then open `workflows/orchestrator-flow.md`.
+
+This repository is documentation and workflow contracts only, so there is no `npm install` or local build step inside this repo itself.
+
 ## Architecture
 
 ```text
