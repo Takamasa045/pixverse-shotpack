@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Usage and setup guide
+    url: https://github.com/Takamasa045/pixverse-shotpack#readme
+    about: Read the README before opening a support issue.
+

@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a reproducible problem in the pipeline or Remotion consumer.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting an issue. Please include enough detail to reproduce it locally.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect instead?
+      placeholder: The pipeline failed during ...
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: List the exact commands or edits needed to reproduce the problem.
+      placeholder: |
+        1. Edit project.yaml ...
+        2. Run ./bin/pipeline validate --config ./project.yaml
+        3. Run ./bin/pipeline run --config ./project.yaml
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Share relevant local environment details.
+      placeholder: |
+        macOS 15.x
+        Node 22.x
+        npm 10.x
+        PixVerse CLI version ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or error output
+      description: Paste the relevant error output or stack trace.
+      render: shell
+    validations:
+      required: false
+

@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose an improvement to the template, pipeline, or consumer.
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or goal
+      description: What workflow is blocked or missing today?
+      placeholder: I want to ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the change you want and its expected behavior.
+      placeholder: Add support for ...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Extra context
+      description: Links, screenshots, references, or tradeoffs.
+    validations:
+      required: false
+
