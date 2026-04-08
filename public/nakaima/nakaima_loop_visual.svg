@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" aria-label="中今 loop visual">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e1422" />
+      <stop offset="55%" stop-color="#09101a" />
+      <stop offset="100%" stop-color="#04070b" />
+    </linearGradient>
+    <radialGradient id="mistTint" cx="52%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#9ab9df" stop-opacity="0.42" />
+      <stop offset="48%" stop-color="#6682be" stop-opacity="0.17" />
+      <stop offset="100%" stop-color="#25304c" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="warmGrad" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#ffcf98" stop-opacity="0.88" />
+      <stop offset="32%" stop-color="#ffb46e" stop-opacity="0.42" />
+      <stop offset="100%" stop-color="#ff9b54" stop-opacity="0" />
+    </radialGradient>
+    <filter id="mistFilter" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.007 0.018" numOctaves="3" seed="7" result="noise">
+        <animate attributeName="baseFrequency" values="0.007 0.018;0.011 0.023;0.007 0.018" dur="20s" repeatCount="indefinite" />
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="72" xChannelSelector="R" yChannelSelector="G" />
+      <feGaussianBlur stdDeviation="22" />
+    </filter>
+    <filter id="lineFilter" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="turbulence" baseFrequency="0.016 0.04" numOctaves="1" seed="3" result="wave">
+        <animate attributeName="baseFrequency" values="0.016 0.04;0.02 0.05;0.016 0.04" dur="12s" repeatCount="indefinite" />
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="wave" scale="5" xChannelSelector="R" yChannelSelector="G" />
+      <feGaussianBlur stdDeviation="0.15" />
+    </filter>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="largeGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="28" result="blur1" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur1" />
+        <feMergeNode in="blur2" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <style>
+      .thread {
+        stroke-dasharray: 1000;
+        stroke-dashoffset: 1000;
+        animation: drawThread 18s linear infinite;
+      }
+      .thread.alt { animation-duration: 21s; animation-delay: -6s; }
+      .thread.slow { animation-duration: 24s; animation-delay: -10s; }
+      #mistPlane { animation: drift 28s ease-in-out infinite alternate; transform-origin: center; transform-box: fill-box; }
+      #ringLayer { animation: breathe 5.8s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+      #threadsLayer { animation: swayWide 15s ease-in-out infinite alternate; transform-origin: center; transform-box: fill-box; }
+      #titleGhost { animation: titlePulse 7.8s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+      #emberCore { animation: emberBeat 2.2s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+      .particle {
+        fill: rgba(244, 238, 225, 0.9);
+        opacity: var(--op);
+        animation: rise var(--d) linear infinite;
+        animation-delay: var(--delay);
+      }
+      @keyframes drift {
+        0%   { transform: translate3d(-24px, -10px, 0) scale(1.01) rotate(-1deg); }
+        100% { transform: translate3d(26px, 14px, 0) scale(1.05) rotate(1deg); }
+      }
+      @keyframes breathe {
+        0%, 100% { transform: scale(0.992); }
+        50%      { transform: scale(1.016); }
+      }
+      @keyframes swayWide {
+        0%   { transform: translateX(-10px) rotate(-0.6deg); }
+        100% { transform: translateX(10px) rotate(0.6deg); }
+      }
+      @keyframes titlePulse {
+        0%, 100% { transform: scale(0.995); opacity: 0.18; }
+        50%      { transform: scale(1.01); opacity: 0.3; }
+      }
+      @keyframes drawThread {
+        0%   { stroke-dashoffset: 1100; opacity: 0.16; }
+        15%  { opacity: 0.72; }
+        50%  { stroke-dashoffset: 140; opacity: 0.86; }
+        70%  { opacity: 0.5; }
+        100% { stroke-dashoffset: -1040; opacity: 0.12; }
+      }
+      @keyframes rise {
+        0%   { transform: translate3d(0,0,0) scale(0.92); opacity: calc(var(--op) * 0.05); }
+        8%   { opacity: calc(var(--op) * 0.95); }
+        100% { transform: translate3d(var(--drift), calc(var(--rise) * -1), 0) scale(1.18); opacity: 0; }
+      }
+      @keyframes emberBeat {
+        0%,100% { transform: scale(0.96); opacity: 0.9; }
+        50%     { transform: scale(1.08); opacity: 1; }
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1920" height="1080" fill="url(#bgGrad)" />
+  <ellipse cx="1130" cy="835" rx="620" ry="350" fill="url(#warmGrad)" opacity="0.36" filter="url(#largeGlow)" />
+  <rect id="mistPlane" x="-180" y="-120" width="2280" height="1320" fill="url(#mistTint)" filter="url(#mistFilter)" opacity="0.82" />
+
+  <g id="threadsLayer" opacity="0.72" filter="url(#lineFilter)">
+    <path class="thread" d="M 82 738 C 334 604, 512 784, 730 642 S 1128 500, 1402 618 S 1730 834, 1886 772" fill="none" stroke="rgba(240,246,255,0.72)" stroke-width="2.2" stroke-linecap="round" pathLength="1000" />
+    <path class="thread alt" d="M 164 260 C 354 208, 486 344, 650 308 S 1012 208, 1228 294 S 1578 440, 1764 388" fill="none" stroke="rgba(172,198,255,0.34)" stroke-width="1.7" stroke-linecap="round" pathLength="1000" />
+    <path class="thread slow" d="M 246 930 C 408 858, 556 948, 742 900 S 1108 820, 1326 892 S 1584 1020, 1808 964" fill="none" stroke="rgba(255,214,168,0.28)" stroke-width="1.6" stroke-linecap="round" pathLength="1000" />
+  </g>
+
+  <g id="ringLayer" opacity="0.88" filter="url(#softGlow)">
+    <circle cx="970" cy="548" r="226" fill="none" stroke="rgba(243,246,251,0.74)" stroke-width="2.6" stroke-dasharray="1110 420" stroke-linecap="round">
+      <animate attributeName="stroke-dashoffset" values="0;-210;0" dur="18s" repeatCount="indefinite" />
+    </circle>
+    <circle cx="970" cy="548" r="318" fill="none" stroke="rgba(164,188,255,0.26)" stroke-width="1.2" stroke-dasharray="1600 660" stroke-linecap="round">
+      <animate attributeName="stroke-dashoffset" values="-80;120;-80" dur="26s" repeatCount="indefinite" />
+    </circle>
+    <path d="M 1060 300 C 1196 330, 1300 420, 1350 554 C 1396 680, 1382 808, 1310 906" fill="none" stroke="rgba(255, 208, 148, 0.46)" stroke-width="2.2" stroke-linecap="round" />
+  </g>
+
+  <g opacity="0.48">
+    <circle class="particle" cx="723" cy="697" r="2.6" style="--d:10.7s; --delay:-3.6s; --rise:114px; --drift:-14px; --op:0.48;" />
+          <circle class="particle" cx="1099" cy="729" r="1.3" style="--d:16.1s; --delay:-18.6s; --rise:113px; --drift:10px; --op:0.4;" />
+          <circle class="particle" cx="1753" cy="909" r="1.6" style="--d:13.1s; --delay:-7.5s; --rise:105px; --drift:13px; --op:0.48;" />
+          <circle class="particle" cx="161" cy="733" r="1.4" style="--d:22.0s; --delay:-14.2s; --rise:126px; --drift:9px; --op:0.24;" />
+          <circle class="particle" cx="691" cy="906" r="4.1" style="--d:12.5s; --delay:-8.4s; --rise:253px; --drift:-36px; --op:0.37;" />
+          <circle class="particle" cx="1181" cy="984" r="1.4" style="--d:10.8s; --delay:-15.9s; --rise:264px; --drift:8px; --op:0.4;" />
+          <circle class="particle" cx="703" cy="858" r="3.3" style="--d:16.3s; --delay:-14.0s; --rise:136px; --drift:29px; --op:0.59;" />
+          <circle class="particle" cx="227" cy="914" r="2.3" style="--d:16.9s; --delay:-13.1s; --rise:204px; --drift:-24px; --op:0.5;" />
+          <circle class="particle" cx="209" cy="680" r="3.0" style="--d:12.3s; --delay:-13.2s; --rise:215px; --drift:-7px; --op:0.2;" />
+          <circle class="particle" cx="1428" cy="659" r="4.0" style="--d:18.0s; --delay:-2.5s; --rise:170px; --drift:-17px; --op:0.54;" />
+          <circle class="particle" cx="1277" cy="874" r="3.3" style="--d:16.4s; --delay:-3.2s; --rise:159px; --drift:0px; --op:0.54;" />
+          <circle class="particle" cx="193" cy="651" r="3.8" style="--d:14.3s; --delay:-8.4s; --rise:264px; --drift:45px; --op:0.41;" />
+          <circle class="particle" cx="1527" cy="817" r="4.4" style="--d:14.9s; --delay:-1.2s; --rise:180px; --drift:-39px; --op:0.5;" />
+          <circle class="particle" cx="1071" cy="650" r="2.0" style="--d:14.0s; --delay:-5.2s; --rise:191px; --drift:-10px; --op:0.66;" />
+          <circle class="particle" cx="1076" cy="661" r="1.8" style="--d:15.6s; --delay:-14.4s; --rise:125px; --drift:44px; --op:0.4;" />
+          <circle class="particle" cx="1186" cy="762" r="3.7" style="--d:23.8s; --delay:-6.3s; --rise:187px; --drift:-31px; --op:0.26;" />
+          <circle class="particle" cx="420" cy="697" r="2.0" style="--d:13.3s; --delay:-10.3s; --rise:240px; --drift:-37px; --op:0.32;" />
+          <circle class="particle" cx="68" cy="694" r="2.7" style="--d:15.2s; --delay:-8.7s; --rise:122px; --drift:28px; --op:0.63;" />
+          <circle class="particle" cx="1324" cy="955" r="3.6" style="--d:10.8s; --delay:-2.0s; --rise:264px; --drift:42px; --op:0.47;" />
+          <circle class="particle" cx="875" cy="824" r="2.6" style="--d:16.7s; --delay:-12.0s; --rise:138px; --drift:-52px; --op:0.69;" />
+          <circle class="particle" cx="962" cy="703" r="1.6" style="--d:18.4s; --delay:-18.0s; --rise:235px; --drift:-41px; --op:0.46;" />
+          <circle class="particle" cx="804" cy="934" r="1.3" style="--d:22.2s; --delay:-7.7s; --rise:128px; --drift:21px; --op:0.31;" />
+          <circle class="particle" cx="771" cy="928" r="2.5" style="--d:11.7s; --delay:-3.0s; --rise:209px; --drift:1px; --op:0.43;" />
+          <circle class="particle" cx="235" cy="693" r="1.6" style="--d:14.8s; --delay:-14.7s; --rise:267px; --drift:-40px; --op:0.45;" />
+  </g>
+
+  <g opacity="0.76">
+    <circle cx="1080" cy="820" r="78" fill="rgba(255,182,108,0.18)" filter="url(#largeGlow)" />
+    <circle cx="1080" cy="820" r="32" fill="rgba(255,196,132,0.34)" filter="url(#softGlow)" />
+    <circle id="emberCore" cx="1080" cy="820" r="8" fill="rgba(255,226,186,0.98)" />
+  </g>
+
+  <text id="titleGhost" x="960" y="576"
+    text-anchor="middle"
+    font-size="250"
+    font-family='"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif'
+    fill="rgba(245,239,229,0.24)"
+    letter-spacing="0.05em"
+    filter="url(#softGlow)">中今</text>
+</svg>

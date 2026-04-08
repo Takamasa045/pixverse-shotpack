@@ -1,0 +1,68 @@
+{
+  "generatedAt": "2026-04-06T13:45:43.005Z",
+  "model": "v6",
+  "quality": "1080p",
+  "duration": 10,
+  "aspectRatio": "16:9",
+  "creditsAvailableAtStart": 18173,
+  "plates": [
+    {
+      "id": "cosmic-mist",
+      "output": "/Users/takamasa/Projects/Pixverse-Workflow/pixverse-shotpack/assets/nakaima/plates/cosmic-mist.mp4",
+      "prompt": "Slow cinematic deep-space nebula, midnight indigo void, breathing clouds of starlight, tiny gold particles drifting, sacred stillness, spacious modern music video background, no people, no text, no planets, no ink, no paper texture",
+      "model": "v6",
+      "quality": "1080p",
+      "duration": 10,
+      "reused": true
+    },
+    {
+      "id": "ember-field",
+      "output": "/Users/takamasa/Projects/Pixverse-Workflow/pixverse-shotpack/assets/nakaima/plates/ember-field.mp4",
+      "prompt": "Warm gold micro particles floating in zero gravity across a dark blue cosmic field, soft depth of field, calm but rhythmic pulses, premium atmospheric music video background, no people, no text, no fire flames, no ink",
+      "model": "v6",
+      "quality": "1080p",
+      "duration": 10,
+      "reused": true
+    },
+    {
+      "id": "filament-light",
+      "output": "/Users/takamasa/Projects/Pixverse-Workflow/pixverse-shotpack/assets/nakaima/plates/filament-light.mp4",
+      "prompt": "Thin luminous filaments reconnecting across space, pale gold and cool white light trails weaving slowly in darkness, elegant sci-fi atmosphere, meditative cinematic background plate, no people, no text, no grid interface, no ink",
+      "model": "v6",
+      "quality": "1080p",
+      "duration": 10,
+      "reused": true
+    },
+    {
+      "id": "liquid-starlight",
+      "output": "/Users/takamasa/Projects/Pixverse-Workflow/pixverse-shotpack/assets/nakaima/plates/liquid-starlight.mp4",
+      "prompt": "Cosmic liquid surface reflecting stars, gentle ripples of starlight across a dark indigo expanse, ethereal spacious atmosphere, premium background plate for music video, no people, no text, no ocean horizon, no ink",
+      "model": "v6",
+      "quality": "1080p",
+      "duration": 10,
+      "reused": true
+    },
+    {
+      "id": "halo-bloom",
+      "output": "/Users/takamasa/Projects/Pixverse-Workflow/pixverse-shotpack/assets/nakaima/plates/halo-bloom.mp4",
+      "prompt": "Concentric halo rings opening and closing in a dark cosmic field, subtle aurora highlights, soft star dust, serene sacred atmosphere, cinematic abstract background plate, no people, no text, no flowers, no ink",
+      "model": "v6",
+      "quality": "1080p",
+      "duration": 10,
+      "reused": true
+    },
+    {
+      "id": "silent-void",
+      "output": "/Users/takamasa/Projects/Pixverse-Workflow/pixverse-shotpack/assets/nakaima/plates/silent-void.mp4",
+      "prompt": "Abstract deep navy cosmic dust field, faint distant stars, slow drifting light trails, spacious contemplative atmosphere, premium cinematic music video background, no people, no text, no planets",
+      "model": "v6",
+      "quality": "1080p",
+      "duration": 10,
+      "seed": "11026",
+      "taskId": "396002561542643",
+      "reused": false,
+      "status": "downloaded"
+    }
+  ],
+  "failures": []
+}
