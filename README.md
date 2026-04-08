@@ -32,16 +32,42 @@ The workflow still treats `dist/manifest.json` as the contract boundary, but the
    pixverse account info --json
    ```
 
-5. Edit `project.yaml`, `brief.md`, and `storyboard.yaml`.
-6. Run the pipeline from the repo root.
+5. Ask your coding agent in natural language. That is the default workflow for this template.
 
-   ```bash
-   ./bin/pipeline validate --config ./project.yaml
-   ./bin/pipeline plan --config ./project.yaml
-   ./bin/pipeline run --config ./project.yaml --dry-run
-   ./bin/pipeline run --config ./project.yaml
-   ./bin/pipeline render --config ./project.yaml
-   ```
+   Example prompts:
+
+   - "Review `brief.md` and `storyboard.yaml`, then update `project.yaml`."
+   - "Validate this repo config and show me the execution plan."
+   - "Do a dry run and fix any config issues you find."
+   - "Run the full PixVerse-to-Remotion flow and render the final MP4."
+   - "I only want to inspect the consumer side. Start Remotion and check `Shotpack`."
+
+6. The agent can update `project.yaml`, `brief.md`, and `storyboard.yaml` as needed, then move through validation, planning, dry-run, execution, and render.
+
+If `dist/manifest.json` is not present yet, the Remotion consumer falls back to `public/shotpack-sample/manifest.json`, which is now a lightweight starter manifest without bundled heavy media files.
+
+## Agent Prompts
+
+| Goal | Natural-language request |
+|---------|---------|
+| Validate the setup | "Validate `project.yaml` and `storyboard.yaml`." |
+| Inspect the plan | "Show me the execution plan for this repo." |
+| Preview without calling PixVerse | "Run a dry run and generate only the manifest and plan." |
+| Full production run | "Generate the shotpack and render the final MP4." |
+| Re-render from existing outputs | "Re-render from the current manifest." |
+| Consumer-only work | "Start the Remotion consumer and check `Shotpack`." |
+
+## Manual Commands
+
+Use these only if you want to run the pipeline yourself instead of asking an agent.
+
+```bash
+./bin/pipeline validate --config ./project.yaml
+./bin/pipeline plan --config ./project.yaml
+./bin/pipeline run --config ./project.yaml --dry-run
+./bin/pipeline run --config ./project.yaml
+./bin/pipeline render --config ./project.yaml
+```
 
 For direct consumer work without the pipeline wrapper:
 
@@ -52,23 +78,11 @@ npm run render:3d-linked
 npm run render:shotpack
 ```
 
-If `dist/manifest.json` is not present yet, the Remotion consumer falls back to `public/shotpack-sample/manifest.json`, which is now a lightweight starter manifest without bundled heavy media files.
-
-## Main Commands
-
-| Command | Purpose |
-|---------|---------|
-| `./bin/pipeline validate --config ./project.yaml` | Validate `project.yaml`, `storyboard.yaml`, and path resolution |
-| `./bin/pipeline plan --config ./project.yaml` | Print the execution plan, durations, jobs, and expected commands |
-| `./bin/pipeline run --config ./project.yaml --dry-run` | Stage a skeleton manifest and preview the run without calling PixVerse |
-| `./bin/pipeline run --config ./project.yaml` | Stage or generate assets, build `dist/manifest.json`, and render the final MP4 |
-| `./bin/pipeline render --config ./project.yaml` | Re-render from the current manifest and staged assets |
-
 The equivalent npm wrappers are `npm run pipeline:validate -- --config ./project.yaml`, `npm run pipeline:plan -- --config ./project.yaml`, `npm run pipeline:run -- --config ./project.yaml`, and `npm run pipeline:render -- --config ./project.yaml`.
 
 ## Project File
 
-`project.yaml` is the runtime entrypoint. The current schema has these top-level sections:
+`project.yaml` is the main config file the agent reads and updates. In the normal workflow, you describe the goal in natural language and let the agent edit this file as needed. The current schema has these top-level sections:
 
 - `project`: slug, title, date, version
 - `inputs`: paths to `brief.md` and `storyboard.yaml`

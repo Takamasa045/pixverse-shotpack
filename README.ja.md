@@ -32,18 +32,44 @@
    pixverse account info --json
    ```
 
-5. `project.yaml`、`brief.md`、`storyboard.yaml` を編集します。
-6. repo 直下で次を実行します。
+5. エージェントに自然言語で依頼します。これがこのテンプレートの基本運用です。
 
-   ```bash
-   ./bin/pipeline validate --config ./project.yaml
-   ./bin/pipeline plan --config ./project.yaml
-   ./bin/pipeline run --config ./project.yaml --dry-run
-   ./bin/pipeline run --config ./project.yaml
-   ./bin/pipeline render --config ./project.yaml
-   ```
+   依頼例:
 
-consumer 側だけ先に触るなら、次でも動きます。
+   - 「`brief.md` と `storyboard.yaml` を見て、`project.yaml` を整えて」
+   - 「この repo の設定を検証して、実行計画を見せて」
+   - 「dry-run して、問題があれば直して」
+   - 「PixVerse 生成から render まで最後まで進めて」
+   - 「consumer 側だけ見たいので Remotion を起動して」
+
+6. エージェントは必要に応じて `project.yaml`、`brief.md`、`storyboard.yaml` を更新し、検証、計画、dry-run、本実行、render まで進めます。
+
+まだ `dist/manifest.json` が無い場合は、`public/shotpack-sample/manifest.json` の軽量スターター manifest で起動します。重いサンプル media はテンプレに含めません。
+
+## エージェントへの依頼例
+
+| やりたいこと | 自然言語の依頼例 |
+|---------|------|
+| 設定の整合性確認 | 「`project.yaml` と `storyboard.yaml` を検証して」 |
+| 実行計画の確認 | 「この設定で実行計画を出して」 |
+| PixVerse を呼ばずに確認 | 「dry-run で manifest と計画だけ作って」 |
+| 本番実行 | 「shotpack を生成して render まで進めて」 |
+| 既存 manifest から再 render | 「今ある manifest で再 render して」 |
+| consumer だけ触る | 「Remotion consumer を起動して `Shotpack` を確認して」 |
+
+## 手動コマンド
+
+エージェントを使わずに自分で叩く場合だけ、次を使います。
+
+```bash
+./bin/pipeline validate --config ./project.yaml
+./bin/pipeline plan --config ./project.yaml
+./bin/pipeline run --config ./project.yaml --dry-run
+./bin/pipeline run --config ./project.yaml
+./bin/pipeline render --config ./project.yaml
+```
+
+consumer 側だけ手動で触る場合:
 
 ```bash
 npm run prepare:assets
@@ -52,23 +78,11 @@ npm run render:3d-linked
 npm run render:shotpack
 ```
 
-まだ `dist/manifest.json` が無い場合は、`public/shotpack-sample/manifest.json` の軽量スターター manifest で起動します。重いサンプル media はテンプレに含めません。
-
-## 主要コマンド
-
-| コマンド | 役割 |
-|---------|------|
-| `./bin/pipeline validate --config ./project.yaml` | `project.yaml`、`storyboard.yaml`、パス解決を検証する |
-| `./bin/pipeline plan --config ./project.yaml` | 実行計画、尺、ジョブ数、実行予定コマンドを出す |
-| `./bin/pipeline run --config ./project.yaml --dry-run` | PixVerse を呼ばずに skeleton manifest と実行計画を出す |
-| `./bin/pipeline run --config ./project.yaml` | asset を生成または取り込み、`dist/manifest.json` を組み、最終 MP4 まで出す |
-| `./bin/pipeline render --config ./project.yaml` | 既存 manifest と staged assets から再 render する |
-
 npm script 版は `npm run pipeline:validate -- --config ./project.yaml`、`npm run pipeline:plan -- --config ./project.yaml`、`npm run pipeline:run -- --config ./project.yaml`、`npm run pipeline:render -- --config ./project.yaml` です。
 
 ## project.yaml
 
-`project.yaml` が runtime entrypoint です。現在の schema は次のトップレベルで構成しています。
+`project.yaml` はエージェントが読む主設定です。通常は自然言語の依頼をもとに、必要な変更をエージェントがこのファイルへ反映します。現在の schema は次のトップレベルで構成しています。
 
 - `project`: slug、title、date、version
 - `inputs`: `brief.md` と `storyboard.yaml` のパス
