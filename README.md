@@ -2,177 +2,176 @@
 
 [日本語版 README](./README.ja.md)
 
-This repository is a `project.yaml`-driven PixVerse-to-Remotion pipeline. It is meant to normalize a natural-language brief into a checked-in project file, validate the plan, stage or generate assets, build `dist/manifest.json`, and render a final MP4 from the same repo.
+**Tell an AI agent "make me a video like this" and it handles everything from planning to final MP4.**
 
-As of March 31, 2026, this repo treats PixVerse-native `v6` as the preferred default model. Legacy `v5.6` remains the fallback, and source-backed limits and pricing live under `references/`.
+## What Is This?
 
-The workflow still treats `dist/manifest.json` as the contract boundary, but the same repo also includes the local Remotion consumer and the CLI needed to get from planning to final MP4.
+PixVerse Shotpack is a template that lets you describe a video in plain language, and an AI agent automatically:
 
-## Quick Start
+1. Turns your request into a structured plan
+2. Creates a storyboard with shot breakdowns
+3. Generates video clips using AI (PixVerse)
+4. Combines everything into a finished MP4
 
-1. Clone this repository.
+No manual commands needed. Just talk to the agent.
 
-   ```bash
-   git clone https://github.com/Takamasa045/pixverse-shotpack.git
-   cd pixverse-shotpack
-   ```
+## How the Sub-Agents Work
 
-2. Install Node dependencies for the Remotion finisher.
+The pipeline runs like a film crew: one **director** coordinating four **specialist roles**. Between each step, you get a **checkpoint (Gate)** where you can approve, request changes, or stop.
 
-   ```bash
-   npm install
-   ```
+```
+Your request (plain language)
+  |
+  v
++--------------------------------------------------+
+|  Orchestrator (Project Manager)                   |
+|  - Manages the overall flow                       |
+|  - Asks for your approval at checkpoints          |
+|  - Can pause and resume at any point              |
++--------------------------------------------------+
+  |
+  v
++--------------------------------------------------+
+|  Director (Creative Lead)                         |
+|  - Turns your brief into a storyboard             |
+|  - Decides shot composition, framing, duration    |
+|  - Designs prompts for the AI video generator     |
++--------------------------------------------------+
+  |
+  v  [ Gate 1: Storyboard Review ]
+  |    Approve / Revise / Abort
+  v
++--------------------------------------------------+
+|  Shot Generator (Camera Operator)                 |
+|  - Calls PixVerse AI to generate video clips      |
+|  - Auto-retries failed shots                      |
+|  - Tracks credit (generation cost) usage          |
++--------------------------------------------------+
+  |
+  v  [ Gate 1.5: Reference Image Review ]  (i2v mode only)
+  |
+  v  [ Gate 2: Shot Quality Review ]
+  |    Approve All / Retry Specific Shots / Abort
+  v
++--------------------------------------------------+
+|  Post-Processor (Editor)                          |
+|  - Extends clip duration                          |
+|  - Upscales resolution                            |
+|  - Adds sound effects and narration               |
++--------------------------------------------------+
+  |
+  v
++--------------------------------------------------+
+|  Assembler (Delivery Manager)                     |
+|  - Orders clips into the correct sequence         |
+|  - Builds the manifest for Remotion               |
+|  - Outputs cost reports and logs                  |
++--------------------------------------------------+
+  |
+  v
++--------------------------------------------------+
+|  Remotion (Video Renderer)                        |
+|  - Renders the final MP4                          |
++--------------------------------------------------+
+  |
+  v
+  Finished MP4
+```
 
-3. Make sure the PixVerse CLI is already installed in your environment.
-4. Authenticate and verify your account before running any workflow.
+## Getting Started
 
-   ```bash
-   pixverse auth login
-   pixverse auth status --json
-   pixverse account info --json
-   ```
+### 1. Clone the repository
 
-5. Ask your coding agent in natural language. That is the default workflow for this template.
+```bash
+git clone https://github.com/Takamasa045/pixverse-shotpack.git
+cd pixverse-shotpack
+```
 
-   Example prompts:
+### 2. Install dependencies
 
-   - "Review `brief.md` and `storyboard.yaml`, then update `project.yaml`."
-   - "Validate this repo config and show me the execution plan."
-   - "Do a dry run and fix any config issues you find."
-   - "Run the full PixVerse-to-Remotion flow and render the final MP4."
-   - "I only want to inspect the consumer side. Start Remotion and check `Shotpack`."
+```bash
+npm install
+```
 
-6. The agent can update `project.yaml`, `brief.md`, and `storyboard.yaml` as needed, then move through validation, planning, dry-run, execution, and render.
+### 3. Log in to PixVerse CLI
 
-If `dist/manifest.json` is not present yet, the Remotion consumer falls back to `public/shotpack-sample/manifest.json`, which is now a lightweight starter manifest without bundled heavy media files.
+PixVerse CLI must be installed separately.
 
-## Agent Prompts
+```bash
+pixverse auth login
+pixverse auth status --json
+pixverse account info --json
+```
 
-| Goal | Natural-language request |
-|---------|---------|
-| Validate the setup | "Validate `project.yaml` and `storyboard.yaml`." |
-| Inspect the plan | "Show me the execution plan for this repo." |
-| Preview without calling PixVerse | "Run a dry run and generate only the manifest and plan." |
-| Full production run | "Generate the shotpack and render the final MP4." |
-| Re-render from existing outputs | "Re-render from the current manifest." |
-| Consumer-only work | "Start the Remotion consumer and check `Shotpack`." |
+### 4. Talk to the agent
+
+Open Claude Code and describe what you want in plain language.
+
+## Example Prompts
+
+| What you want | What to say |
+|---------------|-------------|
+| Check if the setup is correct | "Validate the project config." |
+| See the execution plan | "Show me the execution plan." |
+| Preview without calling PixVerse | "Do a dry run and fix any issues." |
+| Run the full pipeline | "Generate the shotpack and render the final MP4." |
+| Re-render from existing assets | "Re-render from the current manifest." |
+| Just check the video editor | "Start Remotion and check Shotpack." |
+
+## Two Production Modes
+
+| Mode | When to use | Description |
+|------|-------------|-------------|
+| `t2v` (text-to-video) | Speed matters most | Generate clips directly from text prompts |
+| `i2v` (image-to-video) | Visual consistency matters most | Generate reference images first, then animate them |
+
+## Key Files and Folders
+
+| File / Folder | What's inside |
+|---------------|---------------|
+| `project.yaml` | Main config file (the agent reads and updates this) |
+| `brief.md` | Your creative brief (what you want to make) |
+| `storyboard.yaml` | Shot-by-shot breakdown (prompts, duration, framing) |
+| `dist/` | All generated outputs (videos, images, logs) |
+| `dist/manifest.json` | Asset inventory that Remotion reads |
+| `skills/` | Role definitions for each sub-agent |
+| `workflows/` | Step-by-step runbooks for each phase |
+| `references/` | AI model constraints, costs, error codes |
+| `src/` | Remotion video compositions |
+
+## What You Get
+
+When the pipeline finishes, the `dist/` folder contains:
+
+| File | Contents |
+|------|----------|
+| `dist/scene-01.mp4` etc. | Individual shot clips |
+| `dist/vertical/*.mp4` | Vertical (9:16) versions |
+| `dist/manifest.json` | Full asset manifest |
+| `dist/credits-report.json` | Credit (cost) usage report |
+| `dist/run-log.md` | Execution log |
+| `dist/renders/*.mp4` | Final rendered video |
 
 ## Manual Commands
 
-Use these only if you want to run the pipeline yourself instead of asking an agent.
+If you prefer running commands yourself instead of using the agent:
 
 ```bash
-./bin/pipeline validate --config ./project.yaml
-./bin/pipeline plan --config ./project.yaml
-./bin/pipeline run --config ./project.yaml --dry-run
-./bin/pipeline run --config ./project.yaml
-./bin/pipeline render --config ./project.yaml
+# Full pipeline
+./bin/pipeline validate --config ./project.yaml   # Check config
+./bin/pipeline plan --config ./project.yaml       # Create execution plan
+./bin/pipeline run --config ./project.yaml --dry-run  # Dry run
+./bin/pipeline run --config ./project.yaml        # Production run
+./bin/pipeline render --config ./project.yaml     # Render MP4
+
+# Remotion only
+npm run start              # Open preview
+npm run render:shotpack    # Render MP4
 ```
 
-For direct consumer work without the pipeline wrapper:
+## Learn More
 
-```bash
-npm run prepare:assets
-npm run start
-npm run render:3d-linked
-npm run render:shotpack
-```
-
-The equivalent npm wrappers are `npm run pipeline:validate -- --config ./project.yaml`, `npm run pipeline:plan -- --config ./project.yaml`, `npm run pipeline:run -- --config ./project.yaml`, and `npm run pipeline:render -- --config ./project.yaml`.
-
-## Project File
-
-`project.yaml` is the main config file the agent reads and updates. In the normal workflow, you describe the goal in natural language and let the agent edit this file as needed. The current schema has these top-level sections:
-
-- `project`: slug, title, date, version
-- `inputs`: paths to `brief.md` and `storyboard.yaml`
-- `assets`: `local` or `pixverse`, plus staging patterns and audio path
-- `generation`: workflow, model, quality, aspect ratio, and optional still-generation settings
-- `render`: composition, fps, size, and final MP4 output path
-- `theme`: palette passed to the built-in finisher
-- `manifest`: text and edit policies folded into `dist/manifest.json`
-
-Two operating modes are supported:
-
-- `assets.mode: local`: copy existing assets from a source directory, build the manifest, and render locally
-- `assets.mode: pixverse`: call PixVerse CLI to generate stills and videos, download them into `dist/`, then render locally
-
-## Architecture
-
-```text
-Natural language request
-  -> project.yaml
-  -> validate
-  -> plan
-  -> run --dry-run
-  -> run
-  -> render
-```
-
-Internal execution still follows the same producer split:
-
-```text
-Orchestrator
-  -> Director
-  -> Gate 1
-  -> Shot Generator
-  -> Gate 1.5 (i2v only)
-  -> Gate 2
-  -> Post-Processor
-  -> Assembler
-```
-
-Goals of this shape:
-
-- keep `project.yaml` as the single checked-in runtime contract
-- keep creative planning separate from CLI execution
-- preserve resumability through `dist/pipeline-state.json`
-- keep the Remotion finisher inside the same repo without changing the producer manifest contract
-
-## Start Here
-
-1. [project.yaml](./project.yaml)
-2. [SKILL.md](./SKILL.md)
-3. [workflows/orchestrator-flow.md](./workflows/orchestrator-flow.md)
-4. [brief.md](./brief.md) and [storyboard.yaml](./storyboard.yaml)
-
-## Workflow Modes
-
-| workflow | Use when | Reference |
-|---------|----------|-----------|
-| `t2v` | speed matters most | `workflows/pixverse-shotpack.md` |
-| `i2v` | visual consistency matters most | `workflows/image-first-i2v-pipeline.md` |
-
-## Key Directories
-
-| Path | Purpose |
-|------|---------|
-| `skills/` | per-sub-agent responsibility files |
-| `workflows/` | phase runbooks |
-| `references/` | manifest, exit code, model, and credit contracts |
-| `examples/` | sample state, report, and log files |
-| `dist/` | generated outputs |
-| `src/` | Remotion consumer compositions |
-| `scripts/` | asset prep and local audio generation |
-| `public/` | lightweight starter manifest plus synced runtime assets |
-
-## Primary Outputs
-
-- `dist/scene-01.mp4` and other primary assets
-- `dist/vertical/*.mp4` side outputs
-- `dist/audio/shotpack-placeholder.wav`
-- `dist/manifest.json`
-- `dist/credits-report.json`
-- `dist/run-log.md`
-- `dist/pipeline-state.json`
-
-## Compatibility Note
-
-`dist/manifest.json` intentionally stays compatible with the existing Remotion consumer's `RenderManifest` contract. Extra pipeline metadata lives in `pipeline-state.json` and `credits-report.json` instead of changing the consumer boundary.
-
-## Local Consumer
-
-- `LinkedParticles` is the standalone 3D smoke composition.
-- `Shotpack` is the built-in generic finisher composition driven by the shotpack manifest.
-- `scripts/prepare-public-assets.mjs` syncs `dist/manifest.json` and the files it references into `public/shotpack-sample/` only when a manifest exists.
-- The template no longer checks in large sample movies or the `nakaima` media pack. Generate your own assets or place them under `public/shotpack-sample/` when working in `assets.mode: local`.
+1. [project.yaml](./project.yaml) - The actual config file
+2. [SKILL.md](./SKILL.md) - Detailed agent specification
+3. [workflows/orchestrator-flow.md](./workflows/orchestrator-flow.md) - Orchestration details
+4. [brief.md](./brief.md) / [storyboard.yaml](./storyboard.yaml) - Sample brief and storyboard

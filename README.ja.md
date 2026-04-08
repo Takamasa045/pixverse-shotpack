@@ -2,177 +2,176 @@
 
 [English README](./README.md)
 
-このリポジトリは `project.yaml` を正本にした、PixVerse から Remotion までの一気通貫パイプラインです。自然言語の依頼を `project.yaml` / `brief.md` / `storyboard.yaml` に正規化し、検証、計画、dry run、アセット生成または取り込み、`dist/manifest.json` 構築、最終 MP4 render まで同じ repo で回せます。
+**AI に「こんな動画を作って」と伝えるだけで、企画から完成 MP4 まで自動で進む動画制作パイプラインです。**
 
-2026年3月31日時点では、PixVerse ネイティブモデルの既定値を `v6` として扱います。旧 `v5.6` は fallback とし、価格と制約の出典は `references/` に寄せています。
+## これは何？
 
-契約の正本は引き続き `dist/manifest.json` ですが、同じ repo に producer 側のワークフロー、CLI、Remotion consumer を同居させています。
+PixVerse Shotpack は、自然言語（ふつうの日本語）でやりたいことを伝えると、AI エージェントが以下を自動でやってくれるテンプレートです。
 
-## クイックスタート
+1. あなたの依頼を「企画書」に整理する
+2. 企画書をもとに「絵コンテ」を作る
+3. AI（PixVerse）で動画素材を生成する
+4. 素材を組み合わせて 1 本の MP4 動画に仕上げる
 
-1. まずこのリポジトリを clone します。
+手動でコマンドを打つ必要はありません。エージェントに話しかけるだけで進みます。
 
-   ```bash
-   git clone https://github.com/Takamasa045/pixverse-shotpack.git
-   cd pixverse-shotpack
-   ```
+## サブエージェントの構造
 
-2. Remotion finisher 用の依存を入れます。
+このパイプラインは、1 人の「監督」と 4 人の「専門スタッフ」で動きます。各ステップの間には、あなたが内容を確認して OK / やり直しを出せる「チェックポイント（Gate）」があります。
 
-   ```bash
-   npm install
-   ```
+```
+あなたの依頼（自然言語）
+  |
+  v
++--------------------------------------------------+
+|  Orchestrator（監督）                              |
+|  - 全体の進行管理                                  |
+|  - チェックポイントであなたに確認を取る              |
+|  - 途中で止まっても再開できる                       |
++--------------------------------------------------+
+  |
+  v
++--------------------------------------------------+
+|  Director（演出家）                                |
+|  - 依頼内容から「絵コンテ」を作成                   |
+|  - カット割り・構図・尺を決める                     |
+|  - AI への指示文（プロンプト）を設計                 |
++--------------------------------------------------+
+  |
+  v  [ Gate 1: 絵コンテ確認 ]
+  |    OK / やり直し / 中止
+  v
++--------------------------------------------------+
+|  Shot Generator（撮影担当）                        |
+|  - PixVerse AI で動画クリップを生成                 |
+|  - 失敗したカットだけ自動リトライ                   |
+|  - クレジット（生成コスト）を管理                   |
++--------------------------------------------------+
+  |
+  v  [ Gate 1.5: 参照画像確認 ]  ※ i2v モードのみ
+  |
+  v  [ Gate 2: 生成結果確認 ]
+  |    OK / 特定カットだけやり直し / 中止
+  v
++--------------------------------------------------+
+|  Post-Processor（仕上げ担当）                      |
+|  - 尺の延長（extend）                              |
+|  - 高解像度化（upscale）                           |
+|  - 効果音・ナレーション付与                         |
++--------------------------------------------------+
+  |
+  v
++--------------------------------------------------+
+|  Assembler（編集・納品担当）                        |
+|  - 素材を正しい順番に並べる                         |
+|  - Remotion が読める形式に変換                      |
+|  - コスト報告書・ログを出力                         |
++--------------------------------------------------+
+  |
+  v
++--------------------------------------------------+
+|  Remotion（映像レンダラー）                         |
+|  - 最終的な 1 本の MP4 を書き出す                   |
++--------------------------------------------------+
+  |
+  v
+  完成 MP4
+```
 
-3. PixVerse CLI はこのリポジトリの外で、事前にインストールしておきます。
-4. 実行前に認証状態とアカウント情報を確認します。
+## 始め方
 
-   ```bash
-   pixverse auth login
-   pixverse auth status --json
-   pixverse account info --json
-   ```
+### 1. リポジトリを取得する
 
-5. エージェントに自然言語で依頼します。これがこのテンプレートの基本運用です。
+```bash
+git clone https://github.com/Takamasa045/pixverse-shotpack.git
+cd pixverse-shotpack
+```
 
-   依頼例:
+### 2. 依存パッケージをインストールする
 
-   - 「`brief.md` と `storyboard.yaml` を見て、`project.yaml` を整えて」
-   - 「この repo の設定を検証して、実行計画を見せて」
-   - 「dry-run して、問題があれば直して」
-   - 「PixVerse 生成から render まで最後まで進めて」
-   - 「consumer 側だけ見たいので Remotion を起動して」
+```bash
+npm install
+```
 
-6. エージェントは必要に応じて `project.yaml`、`brief.md`、`storyboard.yaml` を更新し、検証、計画、dry-run、本実行、render まで進めます。
+### 3. PixVerse CLI にログインする
 
-まだ `dist/manifest.json` が無い場合は、`public/shotpack-sample/manifest.json` の軽量スターター manifest で起動します。重いサンプル media はテンプレに含めません。
+PixVerse CLI は別途インストールが必要です。
 
-## エージェントへの依頼例
+```bash
+pixverse auth login
+pixverse auth status --json
+pixverse account info --json
+```
 
-| やりたいこと | 自然言語の依頼例 |
+### 4. エージェントに話しかける
+
+Claude Code を開いて、自然言語で依頼するだけです。
+
+## 依頼の例
+
+| やりたいこと | エージェントへの言い方 |
+|-------------|---------------------|
+| まず設定が正しいか確認したい | 「設定を検証して」 |
+| どんな計画になるか見たい | 「実行計画を見せて」 |
+| AI を呼ばずに事前チェックしたい | 「dry-run して問題があれば直して」 |
+| 最初から最後まで全部やってほしい | 「shotpack を生成して MP4 まで仕上げて」 |
+| 前に作った素材で動画だけ作り直したい | 「今ある manifest で再 render して」 |
+| 編集画面だけ確認したい | 「Remotion を起動して Shotpack を確認して」 |
+
+## 2 つの制作モード
+
+| モード | どんなとき使う？ | 説明 |
+|--------|----------------|------|
+| `t2v`（テキスト→動画） | スピード重視 | テキスト指示だけで素早く動画を生成 |
+| `i2v`（画像→動画） | 世界観の統一重視 | まず参照画像を作り、それをベースに動画を生成 |
+
+## 主なファイルの役割
+
+| ファイル / フォルダ | 何が入っている？ |
+|--------------------|-----------------|
+| `project.yaml` | プロジェクトの全設定（エージェントが読み書きする中心ファイル） |
+| `brief.md` | あなたの依頼内容（企画書） |
+| `storyboard.yaml` | 絵コンテ（カット割り・プロンプト・尺など） |
+| `dist/` | 生成された動画・画像・ログなどの出力先 |
+| `dist/manifest.json` | 生成物の一覧表（Remotion が読む） |
+| `skills/` | 各スタッフ（サブエージェント）の役割定義 |
+| `workflows/` | 制作フローの手順書 |
+| `references/` | AI モデルの制約・コスト・エラーコードなどの参考資料 |
+| `src/` | Remotion の映像テンプレート |
+
+## 完成物
+
+パイプラインが完了すると、`dist/` フォルダに以下が出力されます。
+
+| ファイル | 内容 |
 |---------|------|
-| 設定の整合性確認 | 「`project.yaml` と `storyboard.yaml` を検証して」 |
-| 実行計画の確認 | 「この設定で実行計画を出して」 |
-| PixVerse を呼ばずに確認 | 「dry-run で manifest と計画だけ作って」 |
-| 本番実行 | 「shotpack を生成して render まで進めて」 |
-| 既存 manifest から再 render | 「今ある manifest で再 render して」 |
-| consumer だけ触る | 「Remotion consumer を起動して `Shotpack` を確認して」 |
+| `dist/scene-01.mp4` など | 各カットの動画素材 |
+| `dist/vertical/*.mp4` | 縦型（9:16）バージョン |
+| `dist/manifest.json` | 全素材の一覧と設定 |
+| `dist/credits-report.json` | 使用クレジット（コスト）の報告 |
+| `dist/run-log.md` | 実行ログ |
+| `dist/renders/*.mp4` | 最終完成動画 |
 
-## 手動コマンド
+## 手動で操作したい場合
 
-エージェントを使わずに自分で叩く場合だけ、次を使います。
-
-```bash
-./bin/pipeline validate --config ./project.yaml
-./bin/pipeline plan --config ./project.yaml
-./bin/pipeline run --config ./project.yaml --dry-run
-./bin/pipeline run --config ./project.yaml
-./bin/pipeline render --config ./project.yaml
-```
-
-consumer 側だけ手動で触る場合:
+エージェントに任せず自分でコマンドを打ちたい場合は、以下を使います。
 
 ```bash
-npm run prepare:assets
-npm run start
-npm run render:3d-linked
-npm run render:shotpack
+# パイプライン全体
+./bin/pipeline validate --config ./project.yaml   # 設定チェック
+./bin/pipeline plan --config ./project.yaml       # 実行計画作成
+./bin/pipeline run --config ./project.yaml --dry-run  # 予行演習
+./bin/pipeline run --config ./project.yaml        # 本番実行
+./bin/pipeline render --config ./project.yaml     # MP4 書き出し
+
+# Remotion だけ触る場合
+npm run start              # プレビュー画面を開く
+npm run render:shotpack    # MP4 を書き出す
 ```
 
-npm script 版は `npm run pipeline:validate -- --config ./project.yaml`、`npm run pipeline:plan -- --config ./project.yaml`、`npm run pipeline:run -- --config ./project.yaml`、`npm run pipeline:render -- --config ./project.yaml` です。
+## もっと詳しく知りたい場合
 
-## project.yaml
-
-`project.yaml` はエージェントが読む主設定です。通常は自然言語の依頼をもとに、必要な変更をエージェントがこのファイルへ反映します。現在の schema は次のトップレベルで構成しています。
-
-- `project`: slug、title、date、version
-- `inputs`: `brief.md` と `storyboard.yaml` のパス
-- `assets`: `local` または `pixverse`、コピー元パターン、音声パス
-- `generation`: workflow、model、quality、aspect ratio、必要なら静止画生成設定
-- `render`: composition、fps、サイズ、最終 MP4 出力先
-- `theme`: built-in finisher に渡す配色
-- `manifest`: `dist/manifest.json` に畳み込む text / edit policy
-
-運用モードは 2 つです。
-
-- `assets.mode: local`: 既存 asset を source directory から `dist/` に staging して render
-- `assets.mode: pixverse`: PixVerse CLI で静止画や動画を生成し、`dist/` に保存してから render
-
-## アーキテクチャ
-
-```text
-Natural language request
-  -> project.yaml
-  -> validate
-  -> plan
-  -> run --dry-run
-  -> run
-  -> render
-```
-
-内部の producer 実行は引き続き次の責務分離で組みます。
-
-```text
-Orchestrator
-  -> Director
-  -> Gate 1
-  -> Shot Generator
-  -> Gate 1.5 (i2v only)
-  -> Gate 2
-  -> Post-Processor
-  -> Assembler
-```
-
-この構成の目的:
-
-- `project.yaml` を単一の checked-in 実行契約にする
-- creative 判断と CLI 実行を混ぜない
-- `dist/pipeline-state.json` を使って中断再開できるようにする
-- manifest 契約は維持したまま、同じ repo に Remotion finisher を同居させる
-
-## 最初に見るファイル
-
-1. [project.yaml](./project.yaml)
-2. [SKILL.md](./SKILL.md)
-3. [workflows/orchestrator-flow.md](./workflows/orchestrator-flow.md)
-4. [brief.md](./brief.md) と [storyboard.yaml](./storyboard.yaml)
-
-## ワークフロー選択
-
-| workflow | 用途 | 参照 |
-|---------|------|------|
-| `t2v` | まず速く作りたい | `workflows/pixverse-shotpack.md` |
-| `i2v` | 世界観の統一を優先したい | `workflows/image-first-i2v-pipeline.md` |
-
-## ディレクトリ
-
-| パス | 説明 |
-|------|------|
-| `skills/` | サブエージェントごとの責務定義 |
-| `workflows/` | フェーズごとの実行手順 |
-| `references/` | manifest・終了コード・制約・見積もりの参照資料 |
-| `examples/` | state / report / log を含むサンプル |
-| `dist/` | 生成結果の出力先 |
-| `src/` | Remotion consumer composition |
-| `scripts/` | asset 準備とローカル音声生成 |
-| `public/` | 軽量スターター manifest と runtime 同期先 |
-
-## 主な出力
-
-- `dist/scene-01.mp4` などの primary asset
-- `dist/vertical/*.mp4` の side output
-- `dist/audio/shotpack-placeholder.wav`
-- `dist/manifest.json`
-- `dist/credits-report.json`
-- `dist/run-log.md`
-- `dist/pipeline-state.json`
-
-## 互換性に関する注意
-
-`dist/manifest.json` は、既存 Remotion consumer が読む `RenderManifest` 互換を維持します。要件定義で欲しい追加の運用情報は `pipeline-state.json` と `credits-report.json` に逃がし、consumer 契約は壊しません。
-
-## ローカル Consumer
-
-- `LinkedParticles` は 3D の単体確認用 composition です。
-- `Shotpack` は manifest 駆動の汎用 finisher composition です。
-- `scripts/prepare-public-assets.mjs` は、`dist/manifest.json` があるときだけ参照 asset を `public/shotpack-sample/` に同期します。
-- テンプレートには大きいサンプル動画や `nakaima` media pack を同梱しません。`assets.mode: local` を使う場合は、自前 asset を `public/shotpack-sample/` に置いてください。
+1. [project.yaml](./project.yaml) - 設定ファイルの実物
+2. [SKILL.md](./SKILL.md) - エージェントの詳細仕様
+3. [workflows/orchestrator-flow.md](./workflows/orchestrator-flow.md) - 進行管理の詳細
+4. [brief.md](./brief.md) / [storyboard.yaml](./storyboard.yaml) - 企画書と絵コンテの実物
