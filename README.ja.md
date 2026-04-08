@@ -52,7 +52,7 @@ npm run render:3d-linked
 npm run render:shotpack
 ```
 
-まだ `dist/manifest.json` が無い場合は、`public/shotpack-sample/manifest.json` と checked-in のサンプル asset を使って起動します。
+まだ `dist/manifest.json` が無い場合は、`public/shotpack-sample/manifest.json` の軽量スターター manifest で起動します。重いサンプル media はテンプレに含めません。
 
 ## 主要コマンド
 
@@ -140,7 +140,7 @@ Orchestrator
 | `dist/` | 生成結果の出力先 |
 | `src/` | Remotion consumer composition |
 | `scripts/` | asset 準備とローカル音声生成 |
-| `public/` | checked-in のサンプル asset と同期先 |
+| `public/` | 軽量スターター manifest と runtime 同期先 |
 
 ## 主な出力
 
@@ -161,3 +161,4 @@ Orchestrator
 - `LinkedParticles` は 3D の単体確認用 composition です。
 - `Shotpack` は manifest 駆動の汎用 finisher composition です。
 - `scripts/prepare-public-assets.mjs` は、`dist/manifest.json` があるときだけ参照 asset を `public/shotpack-sample/` に同期します。
+- テンプレートには大きいサンプル動画や `nakaima` media pack を同梱しません。`assets.mode: local` を使う場合は、自前 asset を `public/shotpack-sample/` に置いてください。

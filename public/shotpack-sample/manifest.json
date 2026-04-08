@@ -1,20 +1,20 @@
 {
   "project": {
-    "id": "shotpack-pixverse-sample",
-    "name": "Shotpack Sample - PixVerse Generated Launch Film",
+    "id": "shotpack-template-starter",
+    "name": "Shotpack Template Starter",
     "version": "1.0.0",
     "primaryDeliverable": "wide",
     "textPolicy": "Readable text and logos are added in Remotion only.",
     "editPolicy": "Keep edits restrained, cinematic, and product-first.",
     "protagonistPolicy": "One hero product per scene, with hands or silhouettes only when needed.",
     "motifs": [],
-    "body": "Signature Product Launch - Atmospheric Reveal 25-30 seconds 6 shots",
-    "artistNotes": "Preserve negative space and keep motion measured.",
-    "referenceNotes": "PixVerse-generated sample run from project.pixverse.yaml."
+    "body": "Lightweight starter manifest for the repository template.",
+    "artistNotes": "Run the pipeline to sync your real manifest and media into public/shotpack-sample/.",
+    "referenceNotes": "Bundled media was removed from the template to keep clone size small."
   },
   "audio": {
-    "src": "audio/shotpack-placeholder.wav",
-    "durationInSeconds": 30,
+    "src": "",
+    "durationInSeconds": 4,
     "bpm": 90
   },
   "theme": {
@@ -29,24 +29,24 @@
       "height": 1080,
       "fps": 30,
       "compositionId": "Shotpack",
-      "durationInFrames": 900,
-      "sceneCount": 6
+      "durationInFrames": 120,
+      "sceneCount": 1
     }
   ],
-  "visualPeakSection": "scene-05",
+  "visualPeakSection": "scene-01",
   "quietSection": "scene-01",
   "thumbnail": {
-    "sceneId": "scene-03",
+    "sceneId": "scene-01",
     "frame": 0
   },
   "scenes": [
     {
       "id": "scene-01",
-      "music_section": "section-1",
-      "objective": "Opening wide shot. Let the still carry the composition and let motion stay restrained.",
+      "music_section": "starter",
+      "objective": "Replace this starter scene by running the pipeline or syncing your own local assets.",
       "emotion": "",
       "motif": "",
-      "hookText": null,
+      "hookText": "Template Starter",
       "transition": "cut",
       "startSec": 0,
       "endSec": 4,
@@ -54,134 +54,12 @@
       "startFrame": 0,
       "durationInFrames": 120,
       "assets": {
-        "videoSrc": "scene-01.mp4",
-        "stills": [
-          "ref-shot-01.jpg"
-        ]
+        "videoSrc": "",
+        "stills": []
       },
-      "prompt": "Quiet studio interior at first light, hero product resting on a central plinth, calm architectural atmosphere with generous negative space",
+      "prompt": "Use project.yaml or project.pixverse.yaml to generate your first real shotpack.",
       "model": "v6",
-      "shot_id": "shot-01",
-      "multi_shot": false
-    },
-    {
-      "id": "scene-02",
-      "music_section": "section-2",
-      "objective": "Detail shot. Keep movement minimal and elegant.",
-      "emotion": "",
-      "motif": "",
-      "hookText": null,
-      "transition": "cut",
-      "startSec": 4,
-      "endSec": 8,
-      "durationSec": 4,
-      "startFrame": 120,
-      "durationInFrames": 120,
-      "assets": {
-        "videoSrc": "scene-02.mp4",
-        "stills": [
-          "ref-shot-02.jpg"
-        ]
-      },
-      "prompt": "Brushed metal and textured fabric seen in a tactile close detail, grazing light revealing fine surface variations, intimate premium material study",
-      "model": "v6",
-      "shot_id": "shot-02",
-      "multi_shot": false
-    },
-    {
-      "id": "scene-03",
-      "music_section": "section-3",
-      "objective": "Primary hero shot. Candidate for upscale after approval.",
-      "emotion": "",
-      "motif": "",
-      "hookText": null,
-      "transition": "cut",
-      "startSec": 8,
-      "endSec": 13,
-      "durationSec": 5,
-      "startFrame": 240,
-      "durationInFrames": 150,
-      "assets": {
-        "videoSrc": "scene-03.mp4",
-        "stills": [
-          "ref-shot-03.jpg"
-        ]
-      },
-      "prompt": "Hero product isolated in a refined editorial composition, controlled practical lighting and soft atmosphere, premium reveal with clear silhouette",
-      "model": "v6",
-      "shot_id": "shot-03",
-      "multi_shot": true
-    },
-    {
-      "id": "scene-04",
-      "music_section": "section-4",
-      "objective": "Human interaction shot. Hands must stay believable.",
-      "emotion": "",
-      "motif": "",
-      "hookText": null,
-      "transition": "cut",
-      "startSec": 13,
-      "endSec": 17,
-      "durationSec": 4,
-      "startFrame": 390,
-      "durationInFrames": 120,
-      "assets": {
-        "videoSrc": "scene-04.mp4",
-        "stills": [
-          "ref-shot-04.jpg"
-        ]
-      },
-      "prompt": "Hands carefully placing and adjusting the product inside the studio, layered foreground shapes and measured motion, tactile interaction without showing readable text",
-      "model": "v6",
-      "shot_id": "shot-04",
-      "multi_shot": false
-    },
-    {
-      "id": "scene-05",
-      "music_section": "section-5",
-      "objective": "Use a longer shot to establish confidence and continuity.",
-      "emotion": "",
-      "motif": "",
-      "hookText": null,
-      "transition": "cut",
-      "startSec": 17,
-      "endSec": 22,
-      "durationSec": 5,
-      "startFrame": 510,
-      "durationInFrames": 150,
-      "assets": {
-        "videoSrc": "scene-05.mp4",
-        "stills": [
-          "ref-shot-05.jpg"
-        ]
-      },
-      "prompt": "Product in use within a calm interior setting, subtle reflections and atmospheric depth, poised momentum before the final reveal",
-      "model": "v6",
-      "shot_id": "shot-05",
-      "multi_shot": true
-    },
-    {
-      "id": "scene-06",
-      "music_section": "section-6",
-      "objective": "Closing hold. Lean into restraint and generous negative space.",
-      "emotion": "",
-      "motif": "",
-      "hookText": null,
-      "transition": "cut",
-      "startSec": 22,
-      "endSec": 30,
-      "durationSec": 8,
-      "startFrame": 660,
-      "durationInFrames": 240,
-      "assets": {
-        "videoSrc": "scene-06.mp4",
-        "stills": [
-          "ref-shot-06.jpg"
-        ]
-      },
-      "prompt": "Final frame of the product and surrounding space, warmer tones settling into the scene, calm premium ending image with lingering afterglow",
-      "model": "v6",
-      "shot_id": "shot-06",
+      "shot_id": "starter-01",
       "multi_shot": false
     }
   ]

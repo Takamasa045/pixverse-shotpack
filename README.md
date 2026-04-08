@@ -52,7 +52,7 @@ npm run render:3d-linked
 npm run render:shotpack
 ```
 
-If `dist/manifest.json` is not present yet, the Remotion consumer falls back to `public/shotpack-sample/manifest.json` and the bundled sample assets.
+If `dist/manifest.json` is not present yet, the Remotion consumer falls back to `public/shotpack-sample/manifest.json`, which is now a lightweight starter manifest without bundled heavy media files.
 
 ## Main Commands
 
@@ -140,7 +140,7 @@ Goals of this shape:
 | `dist/` | generated outputs |
 | `src/` | Remotion consumer compositions |
 | `scripts/` | asset prep and local audio generation |
-| `public/` | checked-in sample assets plus synced runtime assets |
+| `public/` | lightweight starter manifest plus synced runtime assets |
 
 ## Primary Outputs
 
@@ -161,3 +161,4 @@ Goals of this shape:
 - `LinkedParticles` is the standalone 3D smoke composition.
 - `Shotpack` is the built-in generic finisher composition driven by the shotpack manifest.
 - `scripts/prepare-public-assets.mjs` syncs `dist/manifest.json` and the files it references into `public/shotpack-sample/` only when a manifest exists.
+- The template no longer checks in large sample movies or the `nakaima` media pack. Generate your own assets or place them under `public/shotpack-sample/` when working in `assets.mode: local`.

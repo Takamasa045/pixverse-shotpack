@@ -18,7 +18,13 @@ type ShotpackProps = {
   manifest: ShotpackManifest;
 };
 
-const sampleAsset = (file: string) => staticFile(`shotpack-sample/${file}`);
+const sampleAsset = (file: string | null | undefined) => {
+  if (!file) {
+    return null;
+  }
+
+  return staticFile(`shotpack-sample/${file}`);
+};
 
 const SceneCard: React.FC<{
   manifest: ShotpackManifest;
@@ -53,7 +59,8 @@ const SceneCard: React.FC<{
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
-  const stillSrc = scene.assets.stills[0] ? sampleAsset(scene.assets.stills[0]) : null;
+  const stillSrc = sampleAsset(scene.assets.stills[0]);
+  const videoSrc = sampleAsset(scene.assets.videoSrc);
   const title = scene.hookText ?? scene.objective;
 
   return (
@@ -80,21 +87,30 @@ const SceneCard: React.FC<{
           />
         </AbsoluteFill>
       ) : null}
-      <AbsoluteFill
-        style={{
-          transform: `scale(${mediaScale})`,
-        }}
-      >
-        <OffthreadVideo
-          src={sampleAsset(scene.assets.videoSrc)}
-          muted
+      {videoSrc ? (
+        <AbsoluteFill
           style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
+            transform: `scale(${mediaScale})`,
+          }}
+        >
+          <OffthreadVideo
+            src={videoSrc}
+            muted
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        </AbsoluteFill>
+      ) : (
+        <AbsoluteFill
+          style={{
+            background:
+              'radial-gradient(circle at 20% 20%, rgba(255,107,53,0.22) 0%, rgba(255,107,53,0) 35%), radial-gradient(circle at 78% 24%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 28%), linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 55%)',
           }}
         />
-      </AbsoluteFill>
+      )}
       <AbsoluteFill
         style={{
           background:
@@ -262,13 +278,15 @@ const SceneCard: React.FC<{
 };
 
 export const Shotpack: React.FC<ShotpackProps> = ({manifest}) => {
+  const audioSrc = sampleAsset(manifest.audio.src);
+
   return (
     <AbsoluteFill
       style={{
         backgroundColor: manifest.theme.background,
       }}
     >
-      <Audio src={sampleAsset(manifest.audio.src)} />
+      {audioSrc ? <Audio src={audioSrc} /> : null}
       <ShotpackAmbient3D seed={manifest.project.id} />
       {manifest.scenes.map((scene, index) => (
         <Sequence

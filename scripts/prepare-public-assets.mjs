@@ -34,9 +34,7 @@ const collectManifestFiles = (manifest) => {
 const syncShotpackSample = () => {
   if (!fs.existsSync(distManifestPath)) {
     if (fs.existsSync(sampleDir)) {
-      console.log(
-        `Skipped sample sync because ${distManifestPath} does not exist; keeping checked-in sample assets.`,
-      );
+      console.log(`Skipped sample sync because ${distManifestPath} does not exist; keeping starter manifest.`);
       return;
     }
 

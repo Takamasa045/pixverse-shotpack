@@ -9,3 +9,7 @@ node_modules/
 out/
 .remotion/
 public/yokai-cipher/
+assets/nakaima/
+public/nakaima/
+public/shotpack-sample/ref-shot-*
+public/shotpack-sample/scene-*.mp4

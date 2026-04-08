@@ -9,7 +9,7 @@ inputs:
   storyboard: ./storyboard.yaml
 
 assets:
-  mode: local
+  mode: pixverse
   sourceDir: ./public/shotpack-sample
   audio: audio/shotpack-placeholder.wav
   videoPattern: scene-%02d.mp4
