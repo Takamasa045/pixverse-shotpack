@@ -5,3 +5,7 @@ run-log.md
 credits-report.json
 *.zip
 _submission/
+node_modules/
+out/
+.remotion/
+public/yokai-cipher/

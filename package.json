@@ -1,0 +1,32 @@
+{
+  "name": "pixverse-shotpack",
+  "private": true,
+  "scripts": {
+    "prepare:assets": "node scripts/prepare-public-assets.mjs",
+    "pipeline:validate": "./bin/pipeline validate",
+    "pipeline:plan": "./bin/pipeline plan",
+    "pipeline:run": "./bin/pipeline run",
+    "pipeline:render": "./bin/pipeline render",
+    "typecheck": "tsc --noEmit",
+    "start": "npm run prepare:assets && remotion studio src/index.ts",
+    "render:3d-linked": "remotion render src/index.ts LinkedParticles dist/3d/linked-particles.mp4 --codec=h264 --crf=18",
+    "render:shotpack": "npm run prepare:assets && remotion render src/index.ts Shotpack dist/renders/shotpack-full.mp4 --codec=h264 --crf=18 --audio-bitrate=320k"
+  },
+  "dependencies": {
+    "@fontsource/bebas-neue": "^5.2.7",
+    "@fontsource/noto-sans-jp": "^5.2.9",
+    "@remotion/cli": "^4.0.443",
+    "@remotion/media": "^4.0.443",
+    "@types/node": "^25.5.1",
+    "@types/react": "^19.2.14",
+    "@types/three": "^0.179.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.443",
+    "three": "0.169.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
+    "yaml": "^2.8.3",
+    "zod": "4.3.6"
+  }
+}

@@ -1,0 +1,47 @@
+project:
+  slug: shotpack-pixverse-sample
+  title: Shotpack Sample - PixVerse Generated Launch Film
+  date: "2026-04-08"
+  version: "1.0.0"
+
+inputs:
+  brief: ./brief.md
+  storyboard: ./storyboard.yaml
+
+assets:
+  mode: pixverse
+  sourceDir: ./public/shotpack-sample
+  audio: audio/shotpack-placeholder.wav
+  videoPattern: scene-%02d.mp4
+  stillPattern: ref-shot-%02d.webp
+  copyStills: true
+
+generation:
+  workflow: i2v
+  model: v6
+  quality: 1080p
+  aspectRatio: 16:9
+  image:
+    enabled: true
+    model: seedream-5.0-lite
+    quality: 1800p
+    aspectRatio: 16:9
+
+render:
+  compositionId: Shotpack
+  fps: 30
+  width: 1920
+  height: 1080
+  output: ./dist/renders/shotpack-pixverse-sample.mp4
+
+theme:
+  background: "#0A0A0A"
+  accent: "#FF6B35"
+  text: "#FFFFFF"
+
+manifest:
+  textPolicy: Readable text and logos are added in Remotion only.
+  editPolicy: Keep edits restrained, cinematic, and product-first.
+  protagonistPolicy: One hero product per scene, with hands or silhouettes only when needed.
+  artistNotes: Preserve negative space and keep motion measured.
+  referenceNotes: PixVerse-generated sample run from project.pixverse.yaml.
