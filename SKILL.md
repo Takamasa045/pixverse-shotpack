@@ -1,9 +1,9 @@
 ---
 name: pixverse-shotpack
 description: >
-  brief.md または storyboard.yaml から、Orchestrator が Director / Shot Generator /
-  Post-Processor / Assembler を段階実行し、Gate と state file を介して
-  dist/manifest.json まで組み立てる。
+  自然言語の依頼を project.yaml / brief.md / storyboard.yaml に正規化し、
+  validate / plan / run --dry-run / run / render を通して
+  dist/manifest.json と final MP4 まで組み立てる。
 allowed-tools: [Bash, Read, Write, Edit, Glob, Grep]
 ---
 
@@ -11,17 +11,35 @@ allowed-tools: [Bash, Read, Write, Edit, Glob, Grep]
 
 ## Overview
 
-この skill は親 Orchestrator 用。責務は 3 つだけに限定する。
+この skill は親 Orchestrator 用。実行面では `project.yaml` を単一の入口として扱う。責務は 4 つに限定する。
 
-1. 開始フェーズの判定
-2. Gate での承認取得
-3. サブエージェント間のファイル受け渡し
+1. 自然言語依頼を `project.yaml` / `brief.md` / `storyboard.yaml` に正規化する
+2. 開始フェーズを判定する
+3. Gate での承認を管理する
+4. サブエージェント間のファイル受け渡しと CLI 実行を管理する
 
 creative 判断は `skills/director.skill.md`、PixVerse CLI 実行は `skills/shot-generator.skill.md`、後処理は `skills/post-processor.skill.md`、manifest 構築は `skills/assembler.skill.md` を正とする。PixVerse ネイティブモデルは `v6` を優先し、`v5.6` は fallback として扱う。
 
+Remotion consumer 側の composition は `src/` を正とし、producer 契約は変更しない。consumer が参照する入口 manifest は通常 `dist/manifest.json` だが、ローカル preview では `public/shotpack-sample/manifest.json` を fallback として使える。
+
+## Runtime Entry
+
+必ず `project.yaml` を正本として扱う。最低限の運用順は次のとおり。
+
+1. `./bin/pipeline validate --config ./project.yaml`
+2. `./bin/pipeline plan --config ./project.yaml`
+3. `./bin/pipeline run --config ./project.yaml --dry-run`
+4. `./bin/pipeline run --config ./project.yaml`
+5. 必要なら `./bin/pipeline render --config ./project.yaml`
+
+`assets.mode` は次のどちらかに限定する。
+
+- `local`: 既存 asset を `sourceDir` から `dist/` に staged copy する
+- `pixverse`: PixVerse CLI を実行して静止画と動画を生成し、`dist/` に保存する
+
 ## Current Operating Pattern
 
-- 現時点の運用は Pattern A: 単一エージェント + フェーズ分離
+- 現時点の運用は Pattern A: 単一エージェント + `project.yaml` 駆動 + フェーズ分離
 - `skills/` 配下の各 skill を独立責務として扱い、不要な判断を混在させない
 - 将来の `claude --task` 分離手順は `workflows/orchestrator-flow.md` を参照
 
@@ -109,7 +127,7 @@ Director
 
 ## Dry Run
 
-`--dry-run` では PixVerse CLI を実行しない。代わりに以下を出力する。
+`./bin/pipeline run --config ./project.yaml --dry-run` では PixVerse CLI を実行しない。代わりに以下を出力する。
 
 - 実行予定コマンド一覧
 - 推定クレジット消費量
@@ -154,5 +172,13 @@ dry run でも Gate 表示内容は通常運用と同等に組み立てる。
 - `dist/credits-report.json`
 - `dist/run-log.md`
 - `dist/pipeline-state.json`
+- `dist/renders/*.mp4`
+
+ローカル consumer の確認手段は以下。
+
+- `./bin/pipeline render --config ./project.yaml`
+- `npm run start`
+- `npm run render:3d-linked`
+- `npm run render:shotpack`
 
 VPS から Mac mini への契約ファイルは `dist/manifest.json` を正とし、コストと再開情報は補助ファイルとして別送する。

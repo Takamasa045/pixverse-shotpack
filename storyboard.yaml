@@ -1,132 +1,128 @@
-# Starter storyboard for a new project.
-# このファイルは Director の出力契約をそのまま表す最小テンプレート。
-
 meta:
-  title: "generic-launch-film"
+  title: "signature-product-launch"
   fps: 30
-  aspects: ["16:9"]
-  style_notes: "[overall tone, texture, pacing, atmosphere]"
+  aspects: ["16:9", "9:16"]
+  style_notes: "premium editorial, warm neutrals, soft charcoal contrast, tactile materials, shallow depth of field, subtle film grain"
   color_arc: "cool-to-warm"
-  prompt_negative: "blurry, distorted faces, watermark"
-  workflow: "t2v"
+  prompt_negative: "blurry, distorted faces, watermark, oversaturated, warped hands"
+  workflow: "i2v"
 
-# workflow が i2v の場合のみ有効
-# image_generation:
-#   model: "seedream-5.0-lite"
-#   quality: "1800p"
-#   aspect_ratio: "16:9"
+image_generation:
+  model: "seedream-5.0-lite"
+  quality: "1800p"
+  aspect_ratio: "16:9"
 
 shots:
   - id: "shot-01"
     prompt: >-
-      Quiet opening wide shot of [location or environment],
-      restrained light, clean negative space,
-      cinematic atmosphere with tactile detail
+      Quiet studio interior at first light,
+      hero product resting on a central plinth,
+      calm architectural atmosphere with generous negative space
     model: "v6"
     quality: "1080p"
     duration: 4
     aspect_ratio: "16:9"
     audio: false
     multi_shot: false
-    image_ref: null
+    image_ref: "generate"
     post_process:
       extend: null
       upscale: null
       sound: null
       speech: null
-    notes: "Establish world and visual tone."
+    notes: "Opening wide shot. Let the still carry the composition and let motion stay restrained."
 
   - id: "shot-02"
     prompt: >-
-      Close detail study of [material or object],
-      soft directional light and shallow depth,
-      delicate movement in a quiet frame
+      Brushed metal and textured fabric seen in a tactile close detail,
+      grazing light revealing fine surface variations,
+      intimate premium material study
     model: "v6"
     quality: "1080p"
     duration: 4
     aspect_ratio: "16:9"
     audio: false
     multi_shot: false
-    image_ref: null
+    image_ref: "generate"
     post_process:
       extend: null
       upscale: null
       sound: null
       speech: null
-    notes: "Move from atmosphere into tactile detail."
+    notes: "Detail shot. Keep movement minimal and elegant."
 
   - id: "shot-03"
     prompt: >-
-      Hero reveal of [main subject],
-      composed center frame, subtle motion,
-      premium editorial feeling with controlled highlights
+      Hero product isolated in a refined editorial composition,
+      controlled practical lighting and soft atmosphere,
+      premium reveal with clear silhouette
     model: "v6"
     quality: "1080p"
     duration: 5
     aspect_ratio: "16:9"
     audio: true
     multi_shot: true
-    image_ref: null
+    image_ref: "generate"
     post_process:
       extend: null
-      upscale: null
+      upscale: "4k"
       sound: null
       speech: null
-    notes: "First clear presentation of the hero subject."
+    notes: "Primary hero shot. Candidate for upscale after approval."
 
   - id: "shot-04"
     prompt: >-
-      Human interaction with [main subject],
-      measured gesture, layered foreground and background,
-      calm motion with space around the action
+      Hands carefully placing and adjusting the product inside the studio,
+      layered foreground shapes and measured motion,
+      tactile interaction without showing readable text
     model: "v6"
     quality: "1080p"
     duration: 4
     aspect_ratio: "16:9"
     audio: true
     multi_shot: false
-    image_ref: null
+    image_ref: "generate"
     post_process:
       extend: null
       upscale: null
-      sound: null
+      sound: "soft fabric touch and subtle room tone"
       speech: null
-    notes: "Show function or presence without crowding the frame."
+    notes: "Human interaction shot. Hands must stay believable."
 
   - id: "shot-05"
     prompt: >-
-      Mid-sequence momentum shot with the subject in use,
-      refined camera energy, atmospheric background,
-      visual confidence without excessive spectacle
+      Product in use within a calm interior setting,
+      subtle reflections and atmospheric depth,
+      poised momentum before the final reveal
     model: "v6"
     quality: "1080p"
     duration: 5
     aspect_ratio: "16:9"
     audio: true
     multi_shot: true
-    image_ref: null
+    image_ref: "generate"
     post_process:
       extend: null
       upscale: null
       sound: null
       speech: null
-    notes: "Build toward the final hold."
+    notes: "Use a longer shot to establish confidence and continuity."
 
   - id: "shot-06"
     prompt: >-
-      Closing frame with warm settling light and generous negative space,
-      the subject resting in a memorable final composition,
-      calm premium ending with afterglow
+      Final frame of the product and surrounding space,
+      warmer tones settling into the scene,
+      calm premium ending image with lingering afterglow
     model: "v6"
     quality: "1080p"
     duration: 8
     aspect_ratio: "16:9"
     audio: true
     multi_shot: false
-    image_ref: null
+    image_ref: "generate"
     post_process:
-      extend: null
+      extend: 2
       upscale: null
-      sound: null
+      sound: "soft air movement and distant architectural resonance"
       speech: null
-    notes: "Longer ending hold with wabi-sabi restraint."
+    notes: "Closing hold. Lean into restraint and generous negative space."

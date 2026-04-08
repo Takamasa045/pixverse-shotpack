@@ -2,11 +2,11 @@
 
 [日本語版 README](./README.ja.md)
 
-This repository documents an Orchestrator-led PixVerse shotpack workflow. Start from `brief.md` or `storyboard.yaml`, move through approval gates, and finish with `dist/manifest.json`, `dist/credits-report.json`, and resumable pipeline state.
+This repository is a `project.yaml`-driven PixVerse-to-Remotion pipeline. It is meant to normalize a natural-language brief into a checked-in project file, validate the plan, stage or generate assets, build `dist/manifest.json`, and render a final MP4 from the same repo.
 
 As of March 31, 2026, this repo treats PixVerse-native `v6` as the preferred default model. Legacy `v5.6` remains the fallback, and source-backed limits and pricing live under `references/`.
 
-This repository does not include a Remotion project, Remotion runtime, or Node-based render pipeline. It is the producer-side workflow that prepares assets and a Remotion-compatible manifest for a separate consumer.
+The workflow still treats `dist/manifest.json` as the contract boundary, but the same repo also includes the local Remotion consumer and the CLI needed to get from planning to final MP4.
 
 ## Quick Start
 
@@ -17,8 +17,14 @@ This repository does not include a Remotion project, Remotion runtime, or Node-b
    cd pixverse-shotpack
    ```
 
-2. Make sure the PixVerse CLI is already installed in your environment.
-3. Authenticate and verify your account before running any workflow.
+2. Install Node dependencies for the Remotion finisher.
+
+   ```bash
+   npm install
+   ```
+
+3. Make sure the PixVerse CLI is already installed in your environment.
+4. Authenticate and verify your account before running any workflow.
 
    ```bash
    pixverse auth login
@@ -26,12 +32,70 @@ This repository does not include a Remotion project, Remotion runtime, or Node-b
    pixverse account info --json
    ```
 
-4. Prepare either `brief.md` or `storyboard.yaml`.
-5. Start with `SKILL.md`, then open `workflows/orchestrator-flow.md`.
+5. Edit `project.yaml`, `brief.md`, and `storyboard.yaml`.
+6. Run the pipeline from the repo root.
 
-This repository is documentation and workflow contracts only, so there is no `npm install` or local build step inside this repo itself.
+   ```bash
+   ./bin/pipeline validate --config ./project.yaml
+   ./bin/pipeline plan --config ./project.yaml
+   ./bin/pipeline run --config ./project.yaml --dry-run
+   ./bin/pipeline run --config ./project.yaml
+   ./bin/pipeline render --config ./project.yaml
+   ```
+
+For direct consumer work without the pipeline wrapper:
+
+```bash
+npm run prepare:assets
+npm run start
+npm run render:3d-linked
+npm run render:shotpack
+```
+
+If `dist/manifest.json` is not present yet, the Remotion consumer falls back to `public/shotpack-sample/manifest.json` and the bundled sample assets.
+
+## Main Commands
+
+| Command | Purpose |
+|---------|---------|
+| `./bin/pipeline validate --config ./project.yaml` | Validate `project.yaml`, `storyboard.yaml`, and path resolution |
+| `./bin/pipeline plan --config ./project.yaml` | Print the execution plan, durations, jobs, and expected commands |
+| `./bin/pipeline run --config ./project.yaml --dry-run` | Stage a skeleton manifest and preview the run without calling PixVerse |
+| `./bin/pipeline run --config ./project.yaml` | Stage or generate assets, build `dist/manifest.json`, and render the final MP4 |
+| `./bin/pipeline render --config ./project.yaml` | Re-render from the current manifest and staged assets |
+
+The equivalent npm wrappers are `npm run pipeline:validate -- --config ./project.yaml`, `npm run pipeline:plan -- --config ./project.yaml`, `npm run pipeline:run -- --config ./project.yaml`, and `npm run pipeline:render -- --config ./project.yaml`.
+
+## Project File
+
+`project.yaml` is the runtime entrypoint. The current schema has these top-level sections:
+
+- `project`: slug, title, date, version
+- `inputs`: paths to `brief.md` and `storyboard.yaml`
+- `assets`: `local` or `pixverse`, plus staging patterns and audio path
+- `generation`: workflow, model, quality, aspect ratio, and optional still-generation settings
+- `render`: composition, fps, size, and final MP4 output path
+- `theme`: palette passed to the built-in finisher
+- `manifest`: text and edit policies folded into `dist/manifest.json`
+
+Two operating modes are supported:
+
+- `assets.mode: local`: copy existing assets from a source directory, build the manifest, and render locally
+- `assets.mode: pixverse`: call PixVerse CLI to generate stills and videos, download them into `dist/`, then render locally
 
 ## Architecture
+
+```text
+Natural language request
+  -> project.yaml
+  -> validate
+  -> plan
+  -> run --dry-run
+  -> run
+  -> render
+```
+
+Internal execution still follows the same producer split:
 
 ```text
 Orchestrator
@@ -44,17 +108,19 @@ Orchestrator
   -> Assembler
 ```
 
-Goals of the split:
+Goals of this shape:
 
+- keep `project.yaml` as the single checked-in runtime contract
 - keep creative planning separate from CLI execution
-- force human approval before credit-consuming steps
 - preserve resumability through `dist/pipeline-state.json`
+- keep the Remotion finisher inside the same repo without changing the producer manifest contract
 
 ## Start Here
 
-1. [SKILL.md](./SKILL.md)
-2. [workflows/orchestrator-flow.md](./workflows/orchestrator-flow.md)
-3. [brief.md](./brief.md) or [storyboard.yaml](./storyboard.yaml)
+1. [project.yaml](./project.yaml)
+2. [SKILL.md](./SKILL.md)
+3. [workflows/orchestrator-flow.md](./workflows/orchestrator-flow.md)
+4. [brief.md](./brief.md) and [storyboard.yaml](./storyboard.yaml)
 
 ## Workflow Modes
 
@@ -72,6 +138,9 @@ Goals of the split:
 | `references/` | manifest, exit code, model, and credit contracts |
 | `examples/` | sample state, report, and log files |
 | `dist/` | generated outputs |
+| `src/` | Remotion consumer compositions |
+| `scripts/` | asset prep and local audio generation |
+| `public/` | checked-in sample assets plus synced runtime assets |
 
 ## Primary Outputs
 
@@ -86,3 +155,9 @@ Goals of the split:
 ## Compatibility Note
 
 `dist/manifest.json` intentionally stays compatible with the existing Remotion consumer's `RenderManifest` contract. Extra pipeline metadata lives in `pipeline-state.json` and `credits-report.json` instead of changing the consumer boundary.
+
+## Local Consumer
+
+- `LinkedParticles` is the standalone 3D smoke composition.
+- `Shotpack` is the built-in generic finisher composition driven by the shotpack manifest.
+- `scripts/prepare-public-assets.mjs` syncs `dist/manifest.json` and the files it references into `public/shotpack-sample/` only when a manifest exists.
