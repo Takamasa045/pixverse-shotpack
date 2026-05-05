@@ -1,6 +1,6 @@
 # Credit Estimation Reference
 
-Gate 1 の判断に使う見積もり表。V6 / V5.6 / post-process の数値は、2026-03-31 時点で公開されている公式 pricing を優先している。image generation だけは現行の公開表が薄いため provisional 扱いにする。
+Gate 1 の判断に使う見積もり表。CLI / model list は 2026-05-05 時点の `pixverse@1.1.6` に合わせる。価格はモデル追加より変わりやすいため、CLI 実行前の `pixverse account info --json` と実行後の `credits-report.json` を必ず正にする。
 
 ## Planning Baseline
 
@@ -19,6 +19,8 @@ Gate 1 の判断に使う見積もり表。V6 / V5.6 / post-process の数値は
 | shot generation | `v5.6` | 1080p / 5s / no audio | `75 cr` |
 | shot generation | `v5.6` | 1080p / 5s / with audio | `150 cr` |
 | image generation | `seedream-5.0-lite` | 1800p / 16:9 | provisional `1 cr / image` |
+| image generation | other image models | any supported setting | provisional until measured |
+| third-party video | `sora-*`, `veo-*`, `grok-imagine`, `happyhorse-1.0`, `seedance-*`, `kling-*` | any supported setting | provisional until measured |
 | post-processing | `extend` | `v6` | 元の quality / audio 条件の `per-second` 課金 |
 | post-processing | `sound` | sound effect | `2 cr / sec` |
 | post-processing | `speech` | lip sync | `4 cr / sec` |
@@ -34,7 +36,7 @@ wide_estimate = sum(
 )
 ```
 
-`v5.6` を使う shot だけは fixed table を優先してよい。
+`v5.6` を使う shot だけは fixed table を優先してよい。`happyhorse-1.0` など追加モデルは、初回実行時に account balance の before / after から実測して `credits-report.json` に残す。
 
 ### i2v reference stills
 
@@ -65,10 +67,11 @@ warning_threshold = account_balance * 0.8
 
 ## Source Notes
 
+- Model list: `references/model-constraints.md`
 - V6 pricing: PixVerse Platform `Model & Pricing`
 - V5.6 pricing: 同ページ
 - sound / lip sync pricing: 同ページ
-- image generation pricing: 2026-03-31 時点で public pricing table 未確認
+- image generation / third-party model pricing: public table が薄いものは実測優先
 
 ## Calibration Rule
 

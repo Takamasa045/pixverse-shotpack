@@ -4,7 +4,7 @@
 
 creative brief から、制作可能な `storyboard.yaml` を生成する。creative 判断はここに集約し、PixVerse CLI は実行しない。
 
-V6 が利用可能なら PixVerse ネイティブモデルの既定値は `v6`。pricing や duration を強く固定したい案件では `v5.6` fallback も許可する。
+既定値は `v6`。ただし `pixverse-c1`、`happyhorse-1.0`、`seedance-*`、`kling-*` など CLI 対応モデルは `references/model-constraints.md` の範囲内で選んでよい。
 
 ## Inputs / Outputs
 
@@ -56,7 +56,7 @@ shots:
 5. セリフのローマ字表記は入れない
 6. Midjourney パラメータを混ぜない
 7. `notes` には制作意図だけを書き、CLI 手順は書かない
-8. `multi_shot` は `v6` かつ 1 clip 内の内部カメラ遷移が必要なときだけ true
+8. `multi_shot` は 1 clip 内の内部カメラ遷移が必要なときだけ true
 
 ## Workflow Selection
 
@@ -66,8 +66,10 @@ shots:
 モデル選択の優先順:
 
 - `v6`: camera control / character continuity / native audio / multi-shot を活かしたい
-- `v5.6`: 既知の duration matrix と pricing を優先したい
-- 他モデル: 明示的な作風上の理由があるときだけ
+- `pixverse-c1`: reference / character continuity を優先したい
+- `happyhorse-1.0`: stylized / motion-heavy shot を試したい
+- `seedance-*` / `kling-*` / `sora-*` / `veo-*`: 明示的な作風上の理由があるとき
+- `v5.6`: legacy fallback や motion control を優先したい
 
 `i2v` を選ぶ条件:
 
@@ -99,4 +101,4 @@ Orchestrator に渡す要約:
 - [ ] `prompt_negative` が最低語句を含む
 - [ ] `workflow: i2v` なら `image_generation` がある
 - [ ] post_process は必要な shot だけ設定されている
-- [ ] `multi_shot: true` の shot は `v6` を使っている
+- [ ] `multi_shot: true` は内部カメラ遷移が必要な shot だけ

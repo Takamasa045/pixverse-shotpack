@@ -16,6 +16,7 @@ const ImageGenerationSchema = z.object({
   model: z.string().default('seedream-5.0-lite'),
   quality: z.string().default('1800p'),
   aspectRatio: z.string().default('16:9'),
+  detailLevel: z.enum(['low', 'medium', 'high']).optional(),
 });
 
 const RenderSchema = z.object({
@@ -110,6 +111,7 @@ const StoryboardImageGenerationSchema = z.object({
   model: z.string().optional(),
   quality: z.string().optional(),
   aspect_ratio: z.string().optional(),
+  detail_level: z.enum(['low', 'medium', 'high']).optional(),
 }).passthrough();
 
 const StoryboardShotSchema = z.object({
@@ -182,6 +184,155 @@ type NormalizedShot = {
   hookText: string | null;
   transition: string;
   musicSection: string;
+};
+
+type VideoModelConstraint = {
+  qualities: string[];
+  durations: {min: number; max: number} | number[];
+  aspectRatios: string[];
+};
+
+type ImageModelConstraint = {
+  qualities: string[];
+  aspectRatios?: string[];
+  aspectRatiosByQuality?: Record<string, string[]>;
+  requiresDetailLevel?: boolean;
+};
+
+const STANDARD_VIDEO_ASPECT_RATIOS = ['16:9', '4:3', '1:1', '3:4', '9:16', '3:2', '2:3'];
+const WIDE_VIDEO_ASPECT_RATIOS = [...STANDARD_VIDEO_ASPECT_RATIOS, '21:9'];
+const VERTICAL_VIDEO_ASPECT_RATIOS = ['16:9', '9:16'];
+const COMMON_IMAGE_ASPECT_RATIOS = ['1:1', '16:9', '9:16', '4:3', '3:4', '5:4', '4:5', '3:2', '2:3', '21:9'];
+
+const VIDEO_MODEL_CONSTRAINTS: Record<string, VideoModelConstraint> = {
+  v6: {
+    qualities: ['360p', '540p', '720p', '1080p'],
+    durations: {min: 1, max: 15},
+    aspectRatios: WIDE_VIDEO_ASPECT_RATIOS,
+  },
+  'pixverse-c1': {
+    qualities: ['360p', '540p', '720p', '1080p'],
+    durations: {min: 1, max: 15},
+    aspectRatios: STANDARD_VIDEO_ASPECT_RATIOS,
+  },
+  'v5.6': {
+    qualities: ['360p', '540p', '720p', '1080p'],
+    durations: {min: 1, max: 10},
+    aspectRatios: STANDARD_VIDEO_ASPECT_RATIOS,
+  },
+  'sora-2': {
+    qualities: ['720p'],
+    durations: [4, 8, 12],
+    aspectRatios: VERTICAL_VIDEO_ASPECT_RATIOS,
+  },
+  'sora-2-pro': {
+    qualities: ['720p', '1080p'],
+    durations: [4, 8, 12],
+    aspectRatios: VERTICAL_VIDEO_ASPECT_RATIOS,
+  },
+  'veo-3.1-standard': {
+    qualities: ['720p', '1080p'],
+    durations: [4, 6, 8],
+    aspectRatios: VERTICAL_VIDEO_ASPECT_RATIOS,
+  },
+  'veo-3.1-fast': {
+    qualities: ['720p', '1080p'],
+    durations: [4, 6, 8],
+    aspectRatios: VERTICAL_VIDEO_ASPECT_RATIOS,
+  },
+  'veo-3.1-lite': {
+    qualities: ['720p', '1080p'],
+    durations: [4, 5, 6],
+    aspectRatios: VERTICAL_VIDEO_ASPECT_RATIOS,
+  },
+  'grok-imagine': {
+    qualities: ['480p', '720p'],
+    durations: {min: 1, max: 15},
+    aspectRatios: STANDARD_VIDEO_ASPECT_RATIOS,
+  },
+  'happyhorse-1.0': {
+    qualities: ['720p', '1080p'],
+    durations: {min: 3, max: 15},
+    aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4'],
+  },
+  'seedance-2.0-standard': {
+    qualities: ['480p', '720p'],
+    durations: {min: 4, max: 15},
+    aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+  },
+  'seedance-2.0-fast': {
+    qualities: ['480p', '720p'],
+    durations: {min: 4, max: 15},
+    aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
+  },
+  'kling-o3-pro': {
+    qualities: ['720p'],
+    durations: {min: 3, max: 15},
+    aspectRatios: ['16:9', '9:16', '1:1'],
+  },
+  'kling-o3-standard': {
+    qualities: ['720p'],
+    durations: {min: 3, max: 15},
+    aspectRatios: ['16:9', '9:16', '1:1'],
+  },
+  'kling-3.0-pro': {
+    qualities: ['720p'],
+    durations: {min: 3, max: 15},
+    aspectRatios: ['16:9', '9:16', '1:1'],
+  },
+  'kling-3.0-standard': {
+    qualities: ['720p'],
+    durations: {min: 3, max: 15},
+    aspectRatios: ['16:9', '9:16', '1:1'],
+  },
+};
+
+const IMAGE_MODEL_CONSTRAINTS: Record<string, ImageModelConstraint> = {
+  'qwen-image': {
+    qualities: ['720p', '1080p'],
+    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+  },
+  'gpt-image-2.0': {
+    qualities: ['1080p', '1440p', '2160p'],
+    aspectRatiosByQuality: {
+      '1080p': ['1:1', '3:2', '2:3'],
+      '1440p': ['1:1', '16:9', '9:16'],
+      '2160p': ['16:9', '9:16'],
+    },
+    requiresDetailLevel: true,
+  },
+  'seedream-5.0-lite': {
+    qualities: ['1440p', '1800p', 'auto'],
+    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+  },
+  'seedream-4.5': {
+    qualities: ['1440p', '2160p', 'auto'],
+    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+  },
+  'seedream-4.0': {
+    qualities: ['1080p', '1440p', '2160p', 'auto'],
+    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+  },
+  'gemini-2.5-flash': {
+    qualities: ['1080p', 'auto'],
+    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+  },
+  'gemini-3.0': {
+    qualities: ['1080p', '1440p', '2160p', 'auto'],
+    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+  },
+  'gemini-3.1-flash': {
+    qualities: ['512p', '1080p', '1440p', '2160p', 'auto'],
+    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+  },
+  'kling-image-o3': {
+    qualities: ['1080p', '1440p', '2160p'],
+    aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
+  },
+  'kling-image-v3': {
+    qualities: ['1080p', '1440p'],
+    aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'],
+  },
 };
 
 type ValidationResult = {
@@ -418,6 +569,86 @@ const normalizeReferenceImage = (
   return outputPath;
 };
 
+const formatAllowed = (values: Array<string | number>) => {
+  return values.map(String).join(', ');
+};
+
+const supportedImageAspectRatios = (constraint: ImageModelConstraint, quality: string) => {
+  return constraint.aspectRatiosByQuality?.[quality] ?? constraint.aspectRatios ?? [];
+};
+
+const validateVideoModelForShot = (shot: NormalizedShot, errors: string[], warnings: string[]) => {
+  const constraint = VIDEO_MODEL_CONSTRAINTS[shot.model];
+
+  if (!constraint) {
+    warnings.push(`Unknown video model for ${shot.sceneId}: ${shot.model}; PixVerse CLI validation is authoritative.`);
+    return;
+  }
+
+  if (!Number.isInteger(shot.durationSeconds)) {
+    errors.push(`Duration must be an integer number of seconds for ${shot.sceneId}: ${shot.durationSeconds}`);
+  }
+
+  if (Array.isArray(constraint.durations)) {
+    if (!constraint.durations.includes(shot.durationSeconds)) {
+      errors.push(
+        `Duration ${shot.durationSeconds}s is not supported by ${shot.model} for ${shot.sceneId}; allowed: ${formatAllowed(constraint.durations)}`,
+      );
+    }
+  } else if (shot.durationSeconds < constraint.durations.min || shot.durationSeconds > constraint.durations.max) {
+    errors.push(
+      `Duration ${shot.durationSeconds}s is not supported by ${shot.model} for ${shot.sceneId}; allowed: ${constraint.durations.min}-${constraint.durations.max}s`,
+    );
+  }
+
+  if (!constraint.qualities.includes(shot.quality)) {
+    errors.push(
+      `Quality ${shot.quality} is not supported by ${shot.model} for ${shot.sceneId}; allowed: ${formatAllowed(constraint.qualities)}`,
+    );
+  }
+
+  if (!constraint.aspectRatios.includes(shot.aspectRatio)) {
+    errors.push(
+      `Aspect ratio ${shot.aspectRatio} is not supported by ${shot.model} for ${shot.sceneId}; allowed: ${formatAllowed(constraint.aspectRatios)}`,
+    );
+  }
+};
+
+const validateImageGenerationOptions = (loaded: LoadedProjectConfig, errors: string[], warnings: string[]) => {
+  if (
+    loaded.assets.mode !== 'pixverse' ||
+    loaded.generation.workflow !== 'i2v' ||
+    !loaded.generation.image.enabled ||
+    !loaded.normalizedShots.some((shot) => shot.imageRef === 'generate' || shot.imageRef === null)
+  ) {
+    return;
+  }
+
+  const model = loaded.storyboard.image_generation?.model ?? loaded.generation.image.model;
+  const quality = loaded.storyboard.image_generation?.quality ?? loaded.generation.image.quality;
+  const aspectRatio = loaded.storyboard.image_generation?.aspect_ratio ?? loaded.generation.image.aspectRatio;
+  const detailLevel = loaded.storyboard.image_generation?.detail_level ?? loaded.generation.image.detailLevel;
+  const constraint = IMAGE_MODEL_CONSTRAINTS[model];
+
+  if (!constraint) {
+    warnings.push(`Unknown image model: ${model}; PixVerse CLI validation is authoritative.`);
+    return;
+  }
+
+  if (!constraint.qualities.includes(quality)) {
+    errors.push(`Image quality ${quality} is not supported by ${model}; allowed: ${formatAllowed(constraint.qualities)}`);
+  }
+
+  const aspectRatios = supportedImageAspectRatios(constraint, quality);
+  if (aspectRatios.length > 0 && !aspectRatios.includes(aspectRatio)) {
+    errors.push(`Image aspect ratio ${aspectRatio} is not supported by ${model} at ${quality}; allowed: ${formatAllowed(aspectRatios)}`);
+  }
+
+  if (constraint.requiresDetailLevel && !detailLevel) {
+    errors.push(`Image model ${model} requires generation.image.detailLevel or image_generation.detail_level.`);
+  }
+};
+
 const buildNormalizedShots = (
   config: ProjectConfigInput,
   storyboard: StoryboardInput,
@@ -548,6 +779,12 @@ const validateConfig = (loaded: LoadedProjectConfig): ValidationResult => {
     warnings.push('I2V workflow is enabled but generation.image.enabled is false; local image_ref paths are required.');
   }
 
+  validateImageGenerationOptions(loaded, errors, warnings);
+
+  for (const shot of loaded.normalizedShots) {
+    validateVideoModelForShot(shot, errors, warnings);
+  }
+
   return {
     ok: errors.length === 0,
     errors,
@@ -560,20 +797,25 @@ const buildPixverseCommandsForShot = (loaded: LoadedProjectConfig, shot: Normali
 
   if (loaded.assets.mode === 'pixverse' && loaded.generation.workflow === 'i2v') {
     if (shot.imageRef === 'generate' || shot.imageRef === null) {
-      commands.push(
-        [
-          'pixverse create image',
-          '--prompt',
-          quote(shot.prompt),
-          '--model',
-          loaded.storyboard.image_generation?.model ?? loaded.generation.image.model,
-          '--quality',
-          loaded.storyboard.image_generation?.quality ?? loaded.generation.image.quality,
-          '--aspect-ratio',
-          loaded.storyboard.image_generation?.aspect_ratio ?? loaded.generation.image.aspectRatio,
-          '--json',
-        ].join(' '),
-      );
+      const imageArgs = [
+        'pixverse create image',
+        '--prompt',
+        quote(shot.prompt),
+        '--model',
+        loaded.storyboard.image_generation?.model ?? loaded.generation.image.model,
+        '--quality',
+        loaded.storyboard.image_generation?.quality ?? loaded.generation.image.quality,
+        '--aspect-ratio',
+        loaded.storyboard.image_generation?.aspect_ratio ?? loaded.generation.image.aspectRatio,
+      ];
+      const detailLevel = loaded.storyboard.image_generation?.detail_level ?? loaded.generation.image.detailLevel;
+
+      if (detailLevel) {
+        imageArgs.push('--detail-level', detailLevel);
+      }
+
+      imageArgs.push('--json');
+      commands.push(imageArgs.join(' '));
     }
   }
 
@@ -904,21 +1146,29 @@ const stagePixverseAssets = (loaded: LoadedProjectConfig): StagedAssets => {
         stagedStillRelative = normalizedStillRelative;
       } else {
         const imageCreditsBefore = getPixverseCreditsTotal(loaded.configDir);
+        const imageArgs = [
+          'create',
+          'image',
+          '--prompt',
+          shot.prompt,
+          '--model',
+          loaded.storyboard.image_generation?.model ?? loaded.generation.image.model,
+          '--quality',
+          loaded.storyboard.image_generation?.quality ?? loaded.generation.image.quality,
+          '--aspect-ratio',
+          loaded.storyboard.image_generation?.aspect_ratio ?? loaded.generation.image.aspectRatio,
+        ];
+        const detailLevel = loaded.storyboard.image_generation?.detail_level ?? loaded.generation.image.detailLevel;
+
+        if (detailLevel) {
+          imageArgs.push('--detail-level', detailLevel);
+        }
+
+        imageArgs.push('--json');
+
         const imagePayload = jsonCommand(
           'pixverse',
-          [
-            'create',
-            'image',
-            '--prompt',
-            shot.prompt,
-            '--model',
-            loaded.storyboard.image_generation?.model ?? loaded.generation.image.model,
-            '--quality',
-            loaded.storyboard.image_generation?.quality ?? loaded.generation.image.quality,
-            '--aspect-ratio',
-            loaded.storyboard.image_generation?.aspect_ratio ?? loaded.generation.image.aspectRatio,
-            '--json',
-          ],
+          imageArgs,
           loaded.configDir,
         );
         const imageCreditsAfter = getPixverseCreditsTotal(loaded.configDir);

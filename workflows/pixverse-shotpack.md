@@ -1,6 +1,6 @@
 # Workflow: PixVerse Shot Generator (T2V)
 
-`meta.workflow: "t2v"` の storyboard を受け取り、PixVerse CLI で primary pass のショット群を生成するための runbook。Orchestrator から Gate 1 承認後に呼ばれる前提。PixVerse ネイティブモデルは `v6` を標準とする。
+`meta.workflow: "t2v"` の storyboard を受け取り、PixVerse CLI で primary pass のショット群を生成するための runbook。Orchestrator から Gate 1 承認後に呼ばれる前提。既定モデルは `v6`、利用可能モデルと制約は `references/model-constraints.md` を正とする。
 
 ## Inputs
 
@@ -73,7 +73,7 @@ pixverse task wait <video_id> --json --timeout 300
 - exit `5`: `meta.prompt_negative` を補強して最大 2 回まで再投入
 - exit `6`: validation error。値を記録して停止。再投入しない
 
-`v6` で `multi_shot: true` の場合は、1 クリップの内部に複数カメラ遷移を持たせる。scene 分割の代替には使わない。
+`multi_shot: true` の場合は、1 クリップの内部に複数カメラ遷移を持たせる。scene 分割の代替には使わない。対応外モデルで CLI が validation error を返した場合は、その shot だけ `multi_shot: false` にして再投入する。
 
 詳細は `references/exit-codes.md` を正とする。
 

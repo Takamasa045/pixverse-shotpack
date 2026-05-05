@@ -1,6 +1,6 @@
 # Workflow: Image-First I2V Shot Generator
 
-`meta.workflow: "i2v"` の storyboard を受け取り、参照画像の生成または読込を行ったうえで PixVerse I2V を実行する runbook。Orchestrator から Gate 1 承認後に呼ばれる前提。PixVerse ネイティブモデルは `v6` を標準とする。
+`meta.workflow: "i2v"` の storyboard を受け取り、参照画像の生成または読込を行ったうえで PixVerse I2V を実行する runbook。Orchestrator から Gate 1 承認後に呼ばれる前提。既定モデルは `v6`、利用可能モデルと制約は `references/model-constraints.md` を正とする。
 
 ## Inputs
 
@@ -78,7 +78,7 @@ pixverse create video \
 - retry は ref image を保持したまま video job だけ再投入する
 - `generation_failed` が ref image に起因する場合だけ Gate 1.5 へ戻す
 - 参照画像と動画の対応を `run-log.md` に明示する
-- `v6` の `multi_shot` は内部カメラ遷移を足したい shot にだけ使う
+- `multi_shot` は内部カメラ遷移を足したい shot にだけ使う。対応外モデルで CLI が validation error を返した場合は、その shot だけ `multi_shot: false` にして再投入する
 
 ## Naming Rules
 

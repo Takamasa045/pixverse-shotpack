@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-承認済み `storyboard.yaml` を読み、PixVerse CLI でショット群を生成する。非同期ジョブ管理、クレジット確認、終了コード処理、部分 retry はここに集約する。PixVerse ネイティブ既定値は `v6`。
+承認済み `storyboard.yaml` を読み、PixVerse CLI でショット群を生成する。非同期ジョブ管理、クレジット確認、終了コード処理、部分 retry はここに集約する。既定値は `v6` だが、利用可能モデルは `references/model-constraints.md` を正とする。
 
 ## Inputs / Outputs
 
@@ -20,7 +20,7 @@
 3. retry は shot 単位
 4. 生成済み asset を消さない
 5. `run-log.md` に全 retry を残す
-6. `multi_shot: true` なら `--multi-shot` を付ける
+6. `multi_shot: true` なら `--multi-shot` を付ける。対応外モデルで validation error が出たら、その shot だけ false にして再投入する
 
 ## Preflight
 

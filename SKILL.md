@@ -18,7 +18,7 @@ allowed-tools: [Bash, Read, Write, Edit, Glob, Grep]
 3. Gate での承認を管理する
 4. サブエージェント間のファイル受け渡しと CLI 実行を管理する
 
-creative 判断は `skills/director.skill.md`、PixVerse CLI 実行は `skills/shot-generator.skill.md`、後処理は `skills/post-processor.skill.md`、manifest 構築は `skills/assembler.skill.md` を正とする。PixVerse ネイティブモデルは `v6` を優先し、`v5.6` は fallback として扱う。
+creative 判断は `skills/director.skill.md`、PixVerse CLI 実行は `skills/shot-generator.skill.md`、後処理は `skills/post-processor.skill.md`、manifest 構築は `skills/assembler.skill.md` を正とする。既定モデルは `v6` だが、`pixverse-c1`、`happyhorse-1.0`、`seedance-*`、`kling-*` など最新 CLI 対応モデルは `references/model-constraints.md` を見て選ぶ。
 
 Remotion consumer 側の composition は `src/` を正とし、producer 契約は変更しない。consumer が参照する入口 manifest は通常 `dist/manifest.json` だが、ローカル preview では `public/shotpack-sample/manifest.json` を fallback として使える。
 
@@ -146,7 +146,7 @@ dry run でも Gate 表示内容は通常運用と同等に組み立てる。
 6. モデル制約は `references/model-constraints.md` を正とする
 7. クレジット見積もりは `references/credit-estimation.md` を正とする
 8. `run-log.md` と `credits-report.json` は Assembler 完了前に必ず揃える
-9. `v6` の `multi_shot` は opt-in。1 scene = 1 file の契約は崩さない
+9. `multi_shot` は opt-in。1 scene = 1 file の契約は崩さない
 
 ## File Contracts
 
