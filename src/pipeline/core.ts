@@ -143,7 +143,7 @@ type ProjectConfigInput = z.infer<typeof ProjectConfigSchema>;
 type StoryboardInput = z.infer<typeof StoryboardSchema>;
 type StoryboardShot = z.infer<typeof StoryboardShotSchema>;
 
-export type PipelineCommand = 'plan' | 'render' | 'run' | 'validate';
+export type PipelineCommand = 'doctor' | 'plan' | 'render' | 'run' | 'validate';
 
 export type LoadedProjectConfig = {
   configPath: string;
@@ -203,6 +203,8 @@ const STANDARD_VIDEO_ASPECT_RATIOS = ['16:9', '4:3', '1:1', '3:4', '9:16', '3:2'
 const WIDE_VIDEO_ASPECT_RATIOS = [...STANDARD_VIDEO_ASPECT_RATIOS, '21:9'];
 const VERTICAL_VIDEO_ASPECT_RATIOS = ['16:9', '9:16'];
 const COMMON_IMAGE_ASPECT_RATIOS = ['1:1', '16:9', '9:16', '4:3', '3:4', '5:4', '4:5', '3:2', '2:3', '21:9'];
+const EXTENDED_IMAGE_ASPECT_RATIOS = [...COMMON_IMAGE_ASPECT_RATIOS, '2:1', '1:2'];
+const AUTO_IMAGE_ASPECT_RATIOS = ['auto', ...EXTENDED_IMAGE_ASPECT_RATIOS];
 
 const VIDEO_MODEL_CONSTRAINTS: Record<string, VideoModelConstraint> = {
   v6: {
@@ -216,7 +218,17 @@ const VIDEO_MODEL_CONSTRAINTS: Record<string, VideoModelConstraint> = {
     aspectRatios: STANDARD_VIDEO_ASPECT_RATIOS,
   },
   'v5.6': {
-    qualities: ['360p', '540p', '720p', '1080p'],
+    qualities: ['360p', '480p', '540p', '720p', '1080p'],
+    durations: {min: 1, max: 10},
+    aspectRatios: STANDARD_VIDEO_ASPECT_RATIOS,
+  },
+  'v5.5': {
+    qualities: ['360p', '480p', '540p', '720p', '1080p'],
+    durations: {min: 1, max: 10},
+    aspectRatios: STANDARD_VIDEO_ASPECT_RATIOS,
+  },
+  v5: {
+    qualities: ['360p', '480p', '540p', '720p', '1080p'],
     durations: {min: 1, max: 10},
     aspectRatios: STANDARD_VIDEO_ASPECT_RATIOS,
   },
@@ -231,18 +243,18 @@ const VIDEO_MODEL_CONSTRAINTS: Record<string, VideoModelConstraint> = {
     aspectRatios: VERTICAL_VIDEO_ASPECT_RATIOS,
   },
   'veo-3.1-standard': {
-    qualities: ['720p', '1080p'],
+    qualities: ['720p', '1080p', '2160p'],
     durations: [4, 6, 8],
     aspectRatios: VERTICAL_VIDEO_ASPECT_RATIOS,
   },
   'veo-3.1-fast': {
-    qualities: ['720p', '1080p'],
+    qualities: ['720p', '1080p', '2160p'],
     durations: [4, 6, 8],
     aspectRatios: VERTICAL_VIDEO_ASPECT_RATIOS,
   },
   'veo-3.1-lite': {
     qualities: ['720p', '1080p'],
-    durations: [4, 5, 6],
+    durations: [4, 6, 8],
     aspectRatios: VERTICAL_VIDEO_ASPECT_RATIOS,
   },
   'grok-imagine': {
@@ -256,7 +268,7 @@ const VIDEO_MODEL_CONSTRAINTS: Record<string, VideoModelConstraint> = {
     aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4'],
   },
   'seedance-2.0-standard': {
-    qualities: ['480p', '720p'],
+    qualities: ['480p', '720p', '1080p'],
     durations: {min: 4, max: 15},
     aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
   },
@@ -294,36 +306,31 @@ const IMAGE_MODEL_CONSTRAINTS: Record<string, ImageModelConstraint> = {
   },
   'gpt-image-2.0': {
     qualities: ['1080p', '1440p', '2160p'],
-    aspectRatiosByQuality: {
-      '1080p': ['1:1', '3:2', '2:3'],
-      '1440p': ['1:1', '16:9', '9:16'],
-      '2160p': ['16:9', '9:16'],
-    },
-    requiresDetailLevel: true,
+    aspectRatios: EXTENDED_IMAGE_ASPECT_RATIOS,
   },
   'seedream-5.0-lite': {
-    qualities: ['1440p', '1800p', 'auto'],
-    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+    qualities: ['1440p', '1800p', '2160p', 'auto'],
+    aspectRatios: AUTO_IMAGE_ASPECT_RATIOS,
   },
   'seedream-4.5': {
     qualities: ['1440p', '2160p', 'auto'],
-    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+    aspectRatios: AUTO_IMAGE_ASPECT_RATIOS,
   },
   'seedream-4.0': {
     qualities: ['1080p', '1440p', '2160p', 'auto'],
-    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+    aspectRatios: AUTO_IMAGE_ASPECT_RATIOS,
   },
   'gemini-2.5-flash': {
     qualities: ['1080p', 'auto'],
-    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+    aspectRatios: AUTO_IMAGE_ASPECT_RATIOS,
   },
   'gemini-3.0': {
     qualities: ['1080p', '1440p', '2160p', 'auto'],
-    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+    aspectRatios: AUTO_IMAGE_ASPECT_RATIOS,
   },
   'gemini-3.1-flash': {
     qualities: ['512p', '1080p', '1440p', '2160p', 'auto'],
-    aspectRatios: COMMON_IMAGE_ASPECT_RATIOS,
+    aspectRatios: AUTO_IMAGE_ASPECT_RATIOS,
   },
   'kling-image-o3': {
     qualities: ['1080p', '1440p', '2160p'],
@@ -401,6 +408,21 @@ type PipelinePlan = {
     imageJobs: number;
     videoJobs: number;
   };
+  creditEstimate: {
+    totalCredits: number | null;
+    videoCredits: number;
+    imageCredits: number;
+    postProcessingCredits: number;
+    warnings: string[];
+    perShot: Array<{
+      shotId: string;
+      sceneId: string;
+      videoCredits: number | null;
+      imageCredits: number;
+      totalCredits: number | null;
+      note: string | null;
+    }>;
+  };
   files: {
     configPath: string;
     storyboardPath: string;
@@ -423,7 +445,7 @@ type PipelinePlan = {
 
 export type ExecutePipelineOptions = {
   dryRun: boolean;
-  mode: Exclude<PipelineCommand, 'plan' | 'validate'>;
+  mode: Exclude<PipelineCommand, 'doctor' | 'plan' | 'validate'>;
   runId?: string;
 };
 
@@ -432,6 +454,11 @@ export type ExecutePipelineResult = {
   manifestPath: string;
   renderOutputPath: string;
   summary: RunSummary;
+  dryRunFiles?: {
+    planPath: string;
+    summaryPath: string;
+    manifestPath: string;
+  };
 };
 
 const quote = (value: string) => {
@@ -649,6 +676,10 @@ const validateImageGenerationOptions = (loaded: LoadedProjectConfig, errors: str
   }
 };
 
+const normalizeVideoModelId = (model: string) => {
+  return model.toLowerCase() === 'c1' ? 'pixverse-c1' : model;
+};
+
 const buildNormalizedShots = (
   config: ProjectConfigInput,
   storyboard: StoryboardInput,
@@ -661,7 +692,7 @@ const buildNormalizedShots = (
     sceneId: `scene-${sceneNumber(index)}`,
     prompt: shot.prompt,
     durationSeconds: shot.duration,
-    model: shot.model ?? config.generation.model,
+    model: normalizeVideoModelId(shot.model ?? config.generation.model),
     quality: shot.quality ?? config.generation.quality,
     aspectRatio: shot.aspect_ratio ?? config.generation.aspectRatio,
     audio: shot.audio ?? false,
@@ -878,6 +909,116 @@ export const describeConfigForCli = (loaded: LoadedProjectConfig) => {
   };
 };
 
+const VIDEO_PER_SECOND_CREDIT_RATES: Record<string, Record<string, {noAudio: number; audio: number}>> = {
+  v6: {
+    '360p': {noAudio: 5, audio: 7},
+    '540p': {noAudio: 7, audio: 9},
+    '720p': {noAudio: 9, audio: 12},
+    '1080p': {noAudio: 18, audio: 23},
+  },
+  'pixverse-c1': {
+    '360p': {noAudio: 6, audio: 8},
+    '540p': {noAudio: 8, audio: 10},
+    '720p': {noAudio: 10, audio: 13},
+    '1080p': {noAudio: 19, audio: 24},
+  },
+};
+
+const V56_FIXED_CREDIT_RATES: Record<string, Record<number, {noAudio: number; audio: number}>> = {
+  '360p': {
+    5: {noAudio: 35, audio: 80},
+    8: {noAudio: 70, audio: 115},
+    10: {noAudio: 77, audio: 122},
+  },
+  '540p': {
+    5: {noAudio: 35, audio: 90},
+    8: {noAudio: 70, audio: 115},
+    10: {noAudio: 77, audio: 122},
+  },
+  '720p': {
+    5: {noAudio: 45, audio: 80},
+    8: {noAudio: 90, audio: 135},
+    10: {noAudio: 99, audio: 144},
+  },
+  '1080p': {
+    5: {noAudio: 75, audio: 150},
+    8: {noAudio: 150, audio: 195},
+  },
+};
+
+const estimateVideoCreditsForShot = (shot: NormalizedShot) => {
+  const perSecond = VIDEO_PER_SECOND_CREDIT_RATES[shot.model]?.[shot.quality];
+  if (perSecond) {
+    return {
+      credits: shot.durationSeconds * (shot.audio ? perSecond.audio : perSecond.noAudio),
+      note: null,
+    };
+  }
+
+  const fixed = shot.model === 'v5.6' ? V56_FIXED_CREDIT_RATES[shot.quality]?.[shot.durationSeconds] : undefined;
+  if (fixed) {
+    return {
+      credits: shot.audio ? fixed.audio : fixed.noAudio,
+      note: null,
+    };
+  }
+
+  return {
+    credits: null,
+    note: `No local credit table for ${shot.model} ${shot.quality}; measure from account balance.`,
+  };
+};
+
+const buildCreditEstimate = (loaded: LoadedProjectConfig, imageJobs: number) => {
+  const imageCredits = imageJobs;
+  const warnings: string[] = [];
+  let videoCredits = 0;
+  let hasUnknown = false;
+
+  const perShot = loaded.normalizedShots.map((shot) => {
+    const videoEstimate = loaded.assets.mode === 'pixverse'
+      ? estimateVideoCreditsForShot(shot)
+      : {credits: 0, note: null};
+    const shotImageCredits =
+      loaded.assets.mode === 'pixverse' &&
+      loaded.generation.workflow === 'i2v' &&
+      (shot.imageRef === 'generate' || shot.imageRef === null)
+        ? 1
+        : 0;
+
+    if (videoEstimate.credits === null) {
+      hasUnknown = true;
+      if (videoEstimate.note) {
+        warnings.push(videoEstimate.note);
+      }
+    } else {
+      videoCredits += videoEstimate.credits;
+    }
+
+    return {
+      shotId: shot.sourceId,
+      sceneId: shot.sceneId,
+      videoCredits: videoEstimate.credits,
+      imageCredits: shotImageCredits,
+      totalCredits: videoEstimate.credits === null ? null : videoEstimate.credits + shotImageCredits,
+      note: videoEstimate.note,
+    };
+  });
+
+  if (imageJobs > 0) {
+    warnings.push('Image generation credits are provisional at 1 credit per generated reference image.');
+  }
+
+  return {
+    totalCredits: hasUnknown ? null : videoCredits + imageCredits,
+    videoCredits,
+    imageCredits,
+    postProcessingCredits: 0,
+    warnings: Array.from(new Set(warnings)),
+    perShot,
+  };
+};
+
 export const buildPipelinePlan = (loaded: LoadedProjectConfig): PipelinePlan => {
   const durationSeconds = loaded.normalizedShots.reduce((sum, shot) => sum + shot.durationSeconds, 0);
   const durationInFrames = Math.round(durationSeconds * loaded.render.fps);
@@ -887,6 +1028,7 @@ export const buildPipelinePlan = (loaded: LoadedProjectConfig): PipelinePlan => 
   const videoJobs = loaded.assets.mode === 'pixverse' ? loaded.normalizedShots.length : 0;
   const validation = validateConfig(loaded);
   const commands = loaded.normalizedShots.flatMap((shot) => buildPixverseCommandsForShot(loaded, shot));
+  const creditEstimate = buildCreditEstimate(loaded, imageJobs);
 
   commands.push(
     `node ${quote(path.relative(loaded.configDir, path.resolve(loaded.configDir, 'scripts/prepare-public-assets.mjs')))}`,
@@ -910,6 +1052,7 @@ export const buildPipelinePlan = (loaded: LoadedProjectConfig): PipelinePlan => 
       imageJobs,
       videoJobs,
     },
+    creditEstimate,
     files: {
       configPath: loaded.configPath,
       storyboardPath: loaded.inputs.storyboardPath,
@@ -932,6 +1075,229 @@ export const buildPipelinePlan = (loaded: LoadedProjectConfig): PipelinePlan => 
     })),
     validation,
   };
+};
+
+const formatCredits = (credits: number | null) => {
+  return credits === null ? 'unknown' : `${credits} cr`;
+};
+
+export const formatPipelinePlanMarkdown = (plan: PipelinePlan) => {
+  const configArg = quote(plan.files.configPath);
+  const lines = [
+    '# PixVerse Shotpack Plan',
+    '',
+    '## Summary',
+    '',
+    `- Project: ${plan.project.title}`,
+    `- Asset mode: ${plan.generation.mode}`,
+    `- Workflow: ${plan.generation.workflow}`,
+    `- Scenes: ${plan.totals.sceneCount}`,
+    `- Duration: ${plan.totals.durationSeconds}s / ${plan.totals.durationInFrames} frames`,
+    `- Estimated credits: ${formatCredits(plan.creditEstimate.totalCredits)}`,
+    '',
+    '## Gate 1 Checklist',
+    '',
+    `- Validation: ${plan.validation.ok ? 'ok' : 'needs fixes'}`,
+    `- Image jobs: ${plan.totals.imageJobs}`,
+    `- Video jobs: ${plan.totals.videoJobs}`,
+    `- Render output: ${plan.files.renderOutputPath}`,
+    '',
+    '## Shots',
+    '',
+    '| shot | scene | duration | model | ref image | estimated credits |',
+    '|------|-------|----------|-------|-----------|-------------------|',
+    ...plan.shots.map((shot, index) => {
+      const estimate = plan.creditEstimate.perShot[index];
+      return `| ${shot.shotId} | ${shot.sceneId} | ${shot.durationSeconds}s | ${shot.model} | ${shot.needsReferenceImage ? 'yes' : 'no'} | ${formatCredits(estimate?.totalCredits ?? null)} |`;
+    }),
+    '',
+  ];
+
+  if (plan.validation.errors.length > 0) {
+    lines.push('## Validation Errors', '', ...plan.validation.errors.map((error) => `- ${error}`), '');
+  }
+
+  if (plan.validation.warnings.length > 0 || plan.creditEstimate.warnings.length > 0) {
+    lines.push(
+      '## Warnings',
+      '',
+      ...[...plan.validation.warnings, ...plan.creditEstimate.warnings].map((warning) => `- ${warning}`),
+      '',
+    );
+  }
+
+  lines.push(
+    '## Next Commands',
+    '',
+    '```bash',
+    `./bin/pipeline run --config ${configArg} --dry-run`,
+    `./bin/pipeline run --config ${configArg}`,
+    `./bin/pipeline render --config ${configArg}`,
+    '```',
+    '',
+  );
+
+  return lines.join('\n');
+};
+
+type DoctorCheck = {
+  name: string;
+  status: 'error' | 'ok' | 'warn';
+  message: string;
+};
+
+export type DoctorReport = {
+  ok: boolean;
+  generatedAt: string;
+  project: {
+    slug: string;
+    title: string;
+  };
+  checks: DoctorCheck[];
+};
+
+const captureCommand = (bin: string, args: string[], cwd: string) => {
+  const result = spawnSync(bin, args, {
+    cwd,
+    encoding: 'utf8',
+    timeout: 15000,
+  });
+
+  return {
+    ok: result.status === 0,
+    stdout: typeof result.stdout === 'string' ? result.stdout.trim() : '',
+    stderr: typeof result.stderr === 'string' ? result.stderr.trim() : '',
+    status: result.status,
+    error: result.error,
+  };
+};
+
+const parseVersion = (version: string) => {
+  const match = version.match(/(\d+)\.(\d+)\.(\d+)/);
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+};
+
+const compareVersions = (left: string, right: string) => {
+  const leftParts = parseVersion(left);
+  const rightParts = parseVersion(right);
+
+  if (!leftParts || !rightParts) {
+    return 0;
+  }
+
+  for (let index = 0; index < 3; index += 1) {
+    const delta = leftParts[index] - rightParts[index];
+    if (delta !== 0) {
+      return delta;
+    }
+  }
+
+  return 0;
+};
+
+export const runDoctor = (loaded: LoadedProjectConfig): DoctorReport => {
+  const checks: DoctorCheck[] = [];
+  const nodeMajor = Number(process.versions.node.split('.')[0] ?? 0);
+
+  checks.push({
+    name: 'node',
+    status: nodeMajor >= 20 ? 'ok' : 'error',
+    message: `Node.js ${process.version}; PixVerse CLI requires Node.js >= 20.`,
+  });
+
+  for (const dependency of ['tsx', 'typescript', '@remotion/cli']) {
+    const dependencyPath = path.join(loaded.configDir, 'node_modules', dependency);
+    checks.push({
+      name: `dependency:${dependency}`,
+      status: fs.existsSync(dependencyPath) ? 'ok' : 'error',
+      message: fs.existsSync(dependencyPath)
+        ? `${dependency} is installed.`
+        : `${dependency} is missing. Run npm install.`,
+    });
+  }
+
+  const validation = validateConfig(loaded);
+  checks.push({
+    name: 'project-config',
+    status: validation.ok ? (validation.warnings.length > 0 ? 'warn' : 'ok') : 'error',
+    message: validation.ok
+      ? validation.warnings.length > 0
+        ? `Config is valid with ${validation.warnings.length} warning(s).`
+        : 'Config is valid.'
+      : validation.errors.join('; '),
+  });
+
+  const pixverseVersion = captureCommand('pixverse', ['--version'], loaded.configDir);
+  if (!pixverseVersion.ok) {
+    checks.push({
+      name: 'pixverse-cli',
+      status: 'error',
+      message: 'pixverse command was not found or failed. Install with npm install -g pixverse@latest.',
+    });
+  } else {
+    const latestVersion = captureCommand('npm', ['view', 'pixverse', 'version', '--json'], loaded.configDir);
+    const latest = latestVersion.ok ? latestVersion.stdout.replace(/^"|"$/g, '') : null;
+    const isOutdated = latest ? compareVersions(pixverseVersion.stdout, latest) < 0 : false;
+    checks.push({
+      name: 'pixverse-cli',
+      status: isOutdated ? 'warn' : 'ok',
+      message: latest
+        ? `Installed pixverse ${pixverseVersion.stdout}; npm latest is ${latest}.`
+        : `Installed pixverse ${pixverseVersion.stdout}; latest check skipped.`,
+    });
+  }
+
+  const pixverseAuth = captureCommand('pixverse', ['auth', 'status', '--json'], loaded.configDir);
+  checks.push({
+    name: 'pixverse-auth',
+    status: pixverseAuth.ok ? 'ok' : 'warn',
+    message: pixverseAuth.ok
+      ? 'PixVerse auth status succeeded.'
+      : `PixVerse auth status failed: ${pixverseAuth.stderr || pixverseAuth.stdout || 'unknown error'}`,
+  });
+
+  const pixverseAccount = captureCommand('pixverse', ['account', 'info', '--json'], loaded.configDir);
+  checks.push({
+    name: 'pixverse-account',
+    status: pixverseAccount.ok ? 'ok' : 'warn',
+    message: pixverseAccount.ok
+      ? 'PixVerse account info succeeded.'
+      : `PixVerse account info failed: ${pixverseAccount.stderr || pixverseAccount.stdout || 'unknown error'}`,
+  });
+
+  const remotionBin = path.join(loaded.configDir, 'node_modules', '.bin', 'remotion');
+  checks.push({
+    name: 'remotion',
+    status: fs.existsSync(remotionBin) ? 'ok' : 'error',
+    message: fs.existsSync(remotionBin)
+      ? 'Local Remotion binary is available.'
+      : 'Local Remotion binary is missing. Run npm install.',
+  });
+
+  return {
+    ok: checks.every((check) => check.status !== 'error'),
+    generatedAt: new Date().toISOString(),
+    project: {
+      slug: loaded.project.slug,
+      title: loaded.project.title,
+    },
+    checks,
+  };
+};
+
+export const formatDoctorMarkdown = (report: DoctorReport) => {
+  return [
+    '# PixVerse Shotpack Doctor',
+    '',
+    `- Project: ${report.project.title}`,
+    `- Status: ${report.ok ? 'ok' : 'needs fixes'}`,
+    `- Generated: ${report.generatedAt}`,
+    '',
+    '| check | status | message |',
+    '|-------|--------|---------|',
+    ...report.checks.map((check) => `| ${check.name} | ${check.status} | ${check.message.replace(/\|/g, '/')} |`),
+    '',
+  ].join('\n');
 };
 
 const copyFile = (sourcePath: string, destinationPath: string) => {
@@ -1453,9 +1819,60 @@ const renderShotpack = (loaded: LoadedProjectConfig) => {
       '--codec=h264',
       '--crf=18',
       '--audio-bitrate=320k',
+      '--gl=swangle',
     ],
     loaded.configDir,
   );
+};
+
+const writeDryRunFiles = (
+  loaded: LoadedProjectConfig,
+  plan: PipelinePlan,
+  pipelineId: string,
+) => {
+  ensureDir(loaded.distDir);
+
+  const audioRelative = path.join(
+    'audio',
+    path.basename(resolveFrom(loaded.configDir, path.join(loaded.assets.sourceDir, loaded.assets.audio))),
+  );
+  const manifest = buildManifest(
+    loaded,
+    audioRelative,
+    new Map<string, string[]>(
+      loaded.normalizedShots.map((shot) => [
+        shot.sceneId,
+        loaded.generation.workflow === 'i2v' && (shot.imageRef === 'generate' || shot.imageRef === null)
+          ? [`ref-shot-${sceneNumber(shot.index)}.jpg`]
+          : [],
+      ]),
+    ),
+  );
+  const planPath = path.join(loaded.distDir, 'dry-run-plan.json');
+  const summaryPath = path.join(loaded.distDir, 'dry-run.md');
+  const manifestPath = path.join(loaded.distDir, 'dry-run-manifest.json');
+
+  fs.writeFileSync(
+    planPath,
+    JSON.stringify(
+      {
+        pipeline_id: pipelineId,
+        generated_at: new Date().toISOString(),
+        plan,
+        dry_run_manifest: manifestPath,
+      },
+      null,
+      2,
+    ),
+  );
+  fs.writeFileSync(summaryPath, formatPipelinePlanMarkdown(plan));
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+
+  return {
+    planPath,
+    summaryPath,
+    manifestPath,
+  };
 };
 
 export const executePipeline = async (
@@ -1473,10 +1890,13 @@ export const executePipeline = async (
     `${loaded.project.slug}-${new Date().toISOString().replace(/[:.]/g, '-').replace('T', '-').slice(0, 19)}`;
 
   if (options.dryRun) {
+    const dryRunFiles = writeDryRunFiles(loaded, plan, pipelineId);
+
     return {
       plan,
-      manifestPath: path.join(loaded.distDir, 'manifest.json'),
+      manifestPath: dryRunFiles.manifestPath,
       renderOutputPath: loaded.renderOutputPath,
+      dryRunFiles,
       summary: {
         failed: 0,
         generatedImages: plan.totals.imageJobs,

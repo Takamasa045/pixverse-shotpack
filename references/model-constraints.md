@@ -1,28 +1,30 @@
 # Model Constraints Reference
 
-Director と Shot Generator が共有する制約表。PixVerse CLI / PixVerseAI skills の Supported Models を優先し、CLI validation がこの表と矛盾する場合は CLI を正とする。
+Director と Shot Generator が共有する制約表。PixVerse CLI の Supported Models と PixVerse Platform docs を優先し、CLI validation がこの表と矛盾する場合は CLI を正とする。
 
 ## Source Snapshot
 
-- CLI: `pixverse@1.1.6`
-- Source: `PixVerseAI/skills` Supported Models
-- Updated: 2026-05-05
+- CLI: `pixverse@1.1.10`
+- Source: PixVerse CLI README / PixVerse Platform docs
+- Updated: 2026-05-28
 
 ## Video Models
 
 | モデル | CLI value | mode | quality | duration | aspect ratio | repo notes |
 |-------|-----------|------|---------|----------|--------------|------------|
 | PixVerse V6 | `v6` | Video, Transition, Extend | `360p`, `540p`, `720p`, `1080p` | `1-15s` | `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `3:2`, `2:3`, `21:9` | 既定モデル。native audio と multi-shot を使う場合の第一候補 |
-| PixVerse C1 | `pixverse-c1` | Video, Transition, Reference | `360p`, `540p`, `720p`, `1080p` | `1-15s` | `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `3:2`, `2:3` | character/reference 系の候補 |
-| PixVerse v5.6 | `v5.6` | Video, Transition, Reference, Extend, Motion Control | `360p`, `540p`, `720p`, `1080p` | `1-10s` | `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `3:2`, `2:3` | fallback。motion control が必要な場合の候補 |
+| PixVerse C1 | `pixverse-c1` | Video, Transition, Reference | `360p`, `540p`, `720p`, `1080p` | `1-15s` | `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `3:2`, `2:3` | character/reference/action 系の候補。公式 API の `c1` は CLI では `pixverse-c1` |
+| PixVerse v5.6 | `v5.6` | Video, Transition, Reference, Extend, Motion Control | `360p`, `480p`, `540p`, `720p`, `1080p` | `1-10s` | `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `3:2`, `2:3` | fallback。motion control が必要な場合の候補 |
+| PixVerse v5.5 | `v5.5` | Modify | `360p`, `480p`, `540p`, `720p`, `1080p` | `1-10s` | `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `3:2`, `2:3` | modify 専用候補 |
+| PixVerse v5 | `v5` | Multi-transition, Speech | `360p`, `480p`, `540p`, `720p`, `1080p` | `1-10s` | `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `3:2`, `2:3` | legacy feature 用 |
 | Sora 2 | `sora-2` | Video | `720p` | `4s`, `8s`, `12s` | `16:9`, `9:16` | fixed duration 前提で使う |
 | Sora 2 Pro | `sora-2-pro` | Video | `720p`, `1080p` | `4s`, `8s`, `12s` | `16:9`, `9:16` | 1080p が必要な Sora 系候補 |
-| Veo 3.1 Standard | `veo-3.1-standard` | Video, Transition | `720p`, `1080p` | `4s`, `6s`, `8s` | `16:9`, `9:16` | 安定性優先の third-party 候補 |
-| Veo 3.1 Fast | `veo-3.1-fast` | Video, Transition | `720p`, `1080p` | `4s`, `6s`, `8s` | `16:9`, `9:16` | speed 優先の Veo 候補 |
-| Veo 3.1 Lite | `veo-3.1-lite` | Video | `720p`, `1080p` | `4s`, `5s`, `6s` | `16:9`, `9:16` | short shot 向き |
+| Veo 3.1 Standard | `veo-3.1-standard` | Video, Transition | `720p`, `1080p`, `2160p` | `4s`, `6s`, `8s` | `16:9`, `9:16` | 安定性優先の third-party 候補 |
+| Veo 3.1 Fast | `veo-3.1-fast` | Video, Transition | `720p`, `1080p`, `2160p` | `4s`, `6s`, `8s` | `16:9`, `9:16` | speed 優先の Veo 候補 |
+| Veo 3.1 Lite | `veo-3.1-lite` | Video | `720p`, `1080p` | `4s`, `6s`, `8s` | `16:9`, `9:16` | short shot 向き |
 | Grok Imagine | `grok-imagine` | Video, Extend, Reference | `480p`, `720p` | `1-15s` | `16:9`, `4:3`, `1:1`, `9:16`, `3:4`, `3:2`, `2:3` | 720p 前提。広めの aspect 選択が必要な場合 |
 | Happy Horse 1.0 | `happyhorse-1.0` | Video | `720p`, `1080p` | `3-15s` | `16:9`, `9:16`, `1:1`, `4:3`, `3:4` | stylized / motion-heavy shot の候補 |
-| Seedance 2.0 Standard | `seedance-2.0-standard` | Video, Reference, Transition | `480p`, `720p` | `4-15s` | `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `21:9` | 21:9 や reference が必要な候補 |
+| Seedance 2.0 Standard | `seedance-2.0-standard` | Video, Reference, Transition | `480p`, `720p`, `1080p` | `4-15s` | `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `21:9` | 21:9 や reference が必要な候補 |
 | Seedance 2.0 Fast | `seedance-2.0-fast` | Video, Reference, Transition | `480p`, `720p` | `4-15s` | `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `21:9` | speed 優先の Seedance 候補 |
 | Kling O3 Pro | `kling-o3-pro` | Video, Reference, Transition | `720p` | `3-15s` | `16:9`, `9:16`, `1:1` | Kling O3 高品質側 |
 | Kling O3 Standard | `kling-o3-standard` | Video, Reference, Transition | `720p` | `3-15s` | `16:9`, `9:16`, `1:1` | Kling O3 標準側 |
@@ -34,8 +36,8 @@ Director と Shot Generator が共有する制約表。PixVerse CLI / PixVerseAI
 | モデル | CLI value | quality | aspect ratio | repo notes |
 |-------|-----------|---------|--------------|------------|
 | Qwen Image | `qwen-image` | `720p`, `1080p` | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `5:4`, `4:5`, `3:2`, `2:3`, `21:9` | CLI default |
-| GPT Image 2 | `gpt-image-2.0` | `1080p`, `1440p`, `2160p` | quality 依存 | `detailLevel` / `detail_level` が必須 |
-| Seedream 5.0 Lite | `seedream-5.0-lite` | `1440p`, `1800p`, `auto` | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `5:4`, `4:5`, `3:2`, `2:3`, `21:9` | I2V reference still の既定 |
+| GPT Image 2 | `gpt-image-2.0` | `1080p`, `1440p`, `2160p` | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `2:1`, `1:2`, `21:9` | CLI default |
+| Seedream 5.0 Lite | `seedream-5.0-lite` | `1440p`, `1800p`, `2160p`, `auto` | `auto`, `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `5:4`, `4:5`, `3:2`, `2:3`, `21:9` | I2V reference still の既定 |
 | Seedream 4.5 | `seedream-4.5` | `1440p`, `2160p`, `auto` | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `5:4`, `4:5`, `3:2`, `2:3`, `21:9` | 高解像 reference |
 | Seedream 4.0 | `seedream-4.0` | `1080p`, `1440p`, `2160p`, `auto` | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `5:4`, `4:5`, `3:2`, `2:3`, `21:9` | fallback |
 | Gemini 2.5 Flash | `gemini-2.5-flash` | `1080p`, `auto` | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `5:4`, `4:5`, `3:2`, `2:3`, `21:9` | Nano Banana |
@@ -44,15 +46,9 @@ Director と Shot Generator が共有する制約表。PixVerse CLI / PixVerseAI
 | Kling Image O3 | `kling-image-o3` | `1080p`, `1440p`, `2160p` | `16:9`, `9:16`, `1:1`, `4:3`, `3:4`, `3:2`, `2:3`, `21:9` | Kling image |
 | Kling Image V3 | `kling-image-v3` | `1080p`, `1440p` | `16:9`, `9:16`, `1:1`, `4:3`, `3:4`, `3:2`, `2:3`, `21:9` | Kling image fallback |
 
-### GPT Image 2 Aspect Matrix
+### GPT Image 2 Detail Level
 
-| quality | aspect ratio |
-|---------|--------------|
-| `1080p` | `1:1`, `3:2`, `2:3` |
-| `1440p` | `1:1`, `16:9`, `9:16` |
-| `2160p` | `16:9`, `9:16` |
-
-`project.yaml` では `generation.image.detailLevel`、`storyboard.yaml` では `image_generation.detail_level` に `low`, `medium`, `high` のいずれかを指定する。
+`detailLevel` / `detail_level` は `low`, `medium`, `high` を指定できるが、`pixverse@1.1.10` では必須扱いにしない。
 
 ## Repository-Level Rules
 

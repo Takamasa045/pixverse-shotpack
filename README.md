@@ -98,12 +98,21 @@ npm install
 PixVerse CLI must be installed separately.
 
 ```bash
+npm install -g pixverse@latest
 pixverse auth login
 pixverse auth status --json
 pixverse account info --json
 ```
 
-### 4. Talk to the agent
+### 4. Run the environment doctor
+
+```bash
+npm run pipeline:doctor -- --format markdown
+```
+
+`doctor` checks Node.js, installed dependencies, PixVerse CLI version, auth status, account access, and the local Remotion binary. If your global PixVerse CLI is stale, it suggests `npm install -g pixverse@latest`.
+
+### 5. Talk to the agent
 
 Open Claude Code and describe what you want in plain language.
 
@@ -111,6 +120,7 @@ Open Claude Code and describe what you want in plain language.
 
 | What you want | What to say |
 |---------------|-------------|
+| Check the whole environment | "Run doctor and tell me what needs fixing." |
 | Check if the setup is correct | "Validate the project config." |
 | See the execution plan | "Show me the execution plan." |
 | Preview without calling PixVerse | "Do a dry run and fix any issues." |
@@ -124,6 +134,19 @@ Open Claude Code and describe what you want in plain language.
 |------|-------------|-------------|
 | `t2v` (text-to-video) | Speed matters most | Generate clips directly from text prompts |
 | `i2v` (image-to-video) | Visual consistency matters most | Generate reference images first, then animate them |
+
+## Supported Model Baseline
+
+As of 2026-05-28, this repo targets `pixverse@1.1.10` plus the current PixVerse C1 / V6 platform docs.
+
+| Model | Use it for | Notes |
+|-------|------------|-------|
+| `v6` | Default production, extend, multi-shot | 1-15s, up to 1080p |
+| `pixverse-c1` | Cinematic, action, reference-heavy generation | 1-15s, up to 1080p. The official API name `c1` is normalized to the CLI value `pixverse-c1` |
+| `seedance-2.0-standard` | Higher-quality third-party generation | Validation supports up to `1080p` |
+| `veo-3.1-standard` / `veo-3.1-fast` | Veo comparison runs | Validation supports up to `2160p` |
+
+See [references/model-constraints.md](./references/model-constraints.md) for the full constraints table.
 
 ## Key Files and Folders
 
@@ -158,8 +181,10 @@ If you prefer running commands yourself instead of using the agent:
 
 ```bash
 # Full pipeline
+./bin/pipeline doctor --config ./project.yaml     # Environment doctor
 ./bin/pipeline validate --config ./project.yaml   # Check config
 ./bin/pipeline plan --config ./project.yaml       # Create execution plan
+./bin/pipeline plan --config ./project.yaml --format markdown  # Gate summary
 ./bin/pipeline run --config ./project.yaml --dry-run  # Dry run
 ./bin/pipeline run --config ./project.yaml        # Production run
 ./bin/pipeline render --config ./project.yaml     # Render MP4
@@ -168,6 +193,8 @@ If you prefer running commands yourself instead of using the agent:
 npm run start              # Open preview
 npm run render:shotpack    # Render MP4
 ```
+
+Dry runs do not call PixVerse. They write `dist/dry-run-plan.json`, `dist/dry-run.md`, and `dist/dry-run-manifest.json`.
 
 ## Learn More
 

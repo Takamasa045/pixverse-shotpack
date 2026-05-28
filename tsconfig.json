@@ -17,5 +17,5 @@
     "jsx": "react-jsx",
     "types": ["node"]
   },
-  "include": ["src", "public/shotpack-sample/manifest.json", "remotion.config.ts"]
+  "include": ["src", "public/shotpack-sample/manifest.json"]
 }

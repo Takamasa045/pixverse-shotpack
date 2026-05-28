@@ -113,7 +113,9 @@ dry run では PixVerse CLI を呼ばず、次だけ行う。
 - Gate 提示内容の組み立て
 - 予定コマンドの列挙
 - 予定ファイルの列挙
-- `dist/manifest.json` の skeleton 出力
+- `dist/dry-run-plan.json` の出力
+- `dist/dry-run.md` の出力
+- `dist/dry-run-manifest.json` の skeleton 出力
 
 ## Migration Note
 

@@ -1,11 +1,19 @@
 # Credit Estimation Reference
 
-Gate 1 の判断に使う見積もり表。CLI / model list は 2026-05-05 時点の `pixverse@1.1.6` に合わせる。価格はモデル追加より変わりやすいため、CLI 実行前の `pixverse account info --json` と実行後の `credits-report.json` を必ず正にする。
+Gate 1 の判断に使う見積もり表。CLI / model list は 2026-05-28 時点の `pixverse@1.1.10` と PixVerse Platform docs に合わせる。価格はモデル追加より変わりやすいため、CLI 実行前の `pixverse account info --json` と実行後の `credits-report.json` を必ず正にする。
 
 ## Planning Baseline
 
 | フェーズ | モデル / 処理 | 条件 | 見積もり |
 |---------|---------------|------|---------|
+| shot generation | `pixverse-c1` | 360p / no audio | `6 cr / sec` |
+| shot generation | `pixverse-c1` | 540p / no audio | `8 cr / sec` |
+| shot generation | `pixverse-c1` | 720p / no audio | `10 cr / sec` |
+| shot generation | `pixverse-c1` | 1080p / no audio | `19 cr / sec` |
+| shot generation | `pixverse-c1` | 360p / with audio | `8 cr / sec` |
+| shot generation | `pixverse-c1` | 540p / with audio | `10 cr / sec` |
+| shot generation | `pixverse-c1` | 720p / with audio | `13 cr / sec` |
+| shot generation | `pixverse-c1` | 1080p / with audio | `24 cr / sec` |
 | shot generation | `v6` | 360p / no audio | `5 cr / sec` |
 | shot generation | `v6` | 540p / no audio | `7 cr / sec` |
 | shot generation | `v6` | 720p / no audio | `9 cr / sec` |

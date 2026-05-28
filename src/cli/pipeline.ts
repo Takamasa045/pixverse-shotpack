@@ -1,4 +1,13 @@
-import {buildPipelinePlan, describeConfigForCli, executePipeline, loadProjectConfig, type PipelineCommand} from '../pipeline/core';
+import {
+  buildPipelinePlan,
+  describeConfigForCli,
+  executePipeline,
+  formatDoctorMarkdown,
+  formatPipelinePlanMarkdown,
+  loadProjectConfig,
+  runDoctor,
+  type PipelineCommand,
+} from '../pipeline/core';
 
 type ParsedArgs = {
   command: PipelineCommand;
@@ -10,6 +19,7 @@ const parseArgs = (argv: string[]): ParsedArgs => {
 
   if (
     commandRaw !== 'validate' &&
+    commandRaw !== 'doctor' &&
     commandRaw !== 'plan' &&
     commandRaw !== 'run' &&
     commandRaw !== 'render'
@@ -56,8 +66,21 @@ const requiredOption = (options: Record<string, string | boolean>, key: string):
 
 const main = async () => {
   const parsed = parseArgs(process.argv.slice(2));
-  const configPath = requiredOption(parsed.options, 'config');
+  const configPath =
+    typeof parsed.options.config === 'string'
+      ? parsed.options.config
+      : parsed.command === 'doctor'
+        ? './project.yaml'
+        : requiredOption(parsed.options, 'config');
   const loaded = await loadProjectConfig(configPath);
+  const format = typeof parsed.options.format === 'string' ? parsed.options.format : 'json';
+
+  if (parsed.command === 'doctor') {
+    const report = runDoctor(loaded);
+    console.log(format === 'markdown' ? formatDoctorMarkdown(report) : JSON.stringify(report, null, 2));
+    process.exitCode = report.ok ? 0 : 1;
+    return;
+  }
 
   if (parsed.command === 'validate') {
     console.log(JSON.stringify({ok: true, ...describeConfigForCli(loaded)}, null, 2));
@@ -65,7 +88,8 @@ const main = async () => {
   }
 
   if (parsed.command === 'plan') {
-    console.log(JSON.stringify({ok: true, plan: buildPipelinePlan(loaded)}, null, 2));
+    const plan = buildPipelinePlan(loaded);
+    console.log(format === 'markdown' ? formatPipelinePlanMarkdown(plan) : JSON.stringify({ok: true, plan}, null, 2));
     return;
   }
 
@@ -82,6 +106,8 @@ const main = async () => {
         manifestPath: result.manifestPath,
         renderOutputPath: result.renderOutputPath,
         plan: result.plan.totals,
+        creditEstimate: result.plan.creditEstimate,
+        dryRunFiles: result.dryRunFiles ?? null,
         summary: result.summary,
       },
       null,

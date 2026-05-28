@@ -98,12 +98,21 @@ npm install
 PixVerse CLI は別途インストールが必要です。
 
 ```bash
+npm install -g pixverse@latest
 pixverse auth login
 pixverse auth status --json
 pixverse account info --json
 ```
 
-### 4. エージェントに話しかける
+### 4. まず環境診断する
+
+```bash
+npm run pipeline:doctor -- --format markdown
+```
+
+`doctor` は Node.js、依存パッケージ、PixVerse CLI のバージョン、認証状態、Remotion の有無をまとめて確認します。古い PixVerse CLI が入っている場合は `npm install -g pixverse@latest` を案内します。
+
+### 5. エージェントに話しかける
 
 Claude Code を開いて、自然言語で依頼するだけです。
 
@@ -111,6 +120,7 @@ Claude Code を開いて、自然言語で依頼するだけです。
 
 | やりたいこと | エージェントへの言い方 |
 |-------------|---------------------|
+| まず環境が正しいか確認したい | 「doctor で環境診断して」 |
 | まず設定が正しいか確認したい | 「設定を検証して」 |
 | どんな計画になるか見たい | 「実行計画を見せて」 |
 | AI を呼ばずに事前チェックしたい | 「dry-run して問題があれば直して」 |
@@ -124,6 +134,19 @@ Claude Code を開いて、自然言語で依頼するだけです。
 |--------|----------------|------|
 | `t2v`（テキスト→動画） | スピード重視 | テキスト指示だけで素早く動画を生成 |
 | `i2v`（画像→動画） | 世界観の統一重視 | まず参照画像を作り、それをベースに動画を生成 |
+
+## 対応モデルの目安
+
+2026-05-28 時点では `pixverse@1.1.10` と PixVerse 公式 docs の C1 / V6 を基準にしています。
+
+| モデル | 使いどころ | 備考 |
+|--------|------------|------|
+| `v6` | 通常制作、extend、multi-shot | 既定モデル。1-15 秒、最大 1080p |
+| `pixverse-c1` | cinematic / action / reference 重視 | 1-15 秒、最大 1080p。公式 API 名 `c1` は CLI 用に `pixverse-c1` へ正規化 |
+| `seedance-2.0-standard` | 高品質な third-party 生成 | `1080p` まで validation 対応 |
+| `veo-3.1-standard` / `veo-3.1-fast` | Veo 系の比較候補 | `2160p` まで validation 対応 |
+
+完全な制約表は [references/model-constraints.md](./references/model-constraints.md) を見てください。
 
 ## 主なファイルの役割
 
@@ -158,8 +181,10 @@ Claude Code を開いて、自然言語で依頼するだけです。
 
 ```bash
 # パイプライン全体
+./bin/pipeline doctor --config ./project.yaml     # 環境診断
 ./bin/pipeline validate --config ./project.yaml   # 設定チェック
 ./bin/pipeline plan --config ./project.yaml       # 実行計画作成
+./bin/pipeline plan --config ./project.yaml --format markdown  # Gate 用サマリ
 ./bin/pipeline run --config ./project.yaml --dry-run  # 予行演習
 ./bin/pipeline run --config ./project.yaml        # 本番実行
 ./bin/pipeline render --config ./project.yaml     # MP4 書き出し
@@ -168,6 +193,8 @@ Claude Code を開いて、自然言語で依頼するだけです。
 npm run start              # プレビュー画面を開く
 npm run render:shotpack    # MP4 を書き出す
 ```
+
+dry-run は PixVerse を呼ばず、`dist/dry-run-plan.json`、`dist/dry-run.md`、`dist/dry-run-manifest.json` を出力します。
 
 ## もっと詳しく知りたい場合
 
