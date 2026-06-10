@@ -56,9 +56,10 @@ Director と Shot Generator が共有する制約表。PixVerse CLI の Supporte
 2. known model は `src/pipeline/core.ts` の validation で quality / duration / aspect ratio を事前確認する。
 3. unknown model は warning に留め、CLI validation を正とする。
 4. duration は整数秒で扱う。
-5. primary pass の標準は `16:9`。`9:16` などを primary にする場合は render 設定と manifest consumer を合わせる。
-6. `multi_shot` は opt-in。対応外モデルで CLI が warning / validation error を返した場合は、その shot だけ `multi_shot: false` にして再投入する。
-7. `audio` は opt-in。対応外モデルで CLI が warning / validation error を返した場合は、その shot だけ `audio: false` にして再投入する。
+5. PixVerse 生成では `meta.target_duration_seconds` を必須にし、全 shot 一律 duration は validation error とする。例外は `meta.allow_uniform_duration: true` と `meta.uniform_duration_reason` がある場合のみ。
+6. primary pass の標準は `16:9`。`9:16` などを primary にする場合は render 設定と manifest consumer を合わせる。
+7. `multi_shot` は opt-in。対応外モデルで CLI が warning / validation error を返した場合は、その shot だけ `multi_shot: false` にして再投入する。
+8. `audio` は opt-in。対応外モデルで CLI が warning / validation error を返した場合は、その shot だけ `audio: false` にして再投入する。
 
 ## Post-Process Chain
 

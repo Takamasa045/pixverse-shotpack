@@ -100,11 +100,26 @@ const ProjectConfigSchema = z.object({
   }),
 });
 
+const TargetDurationSchema = z.union([
+  z.number().positive(),
+  z
+    .object({
+      min: z.number().positive(),
+      max: z.number().positive(),
+    })
+    .refine((range) => range.min <= range.max, {
+      message: 'target_duration_seconds.min must be less than or equal to max',
+    }),
+]);
+
 const StoryboardMetaSchema = z.object({
   title: z.string().min(1),
   fps: z.number().int().positive().optional(),
   workflow: z.enum(['t2v', 'i2v']).optional(),
   prompt_negative: z.string().optional(),
+  target_duration_seconds: TargetDurationSchema.optional(),
+  allow_uniform_duration: z.boolean().default(false),
+  uniform_duration_reason: z.union([z.string(), z.null()]).optional(),
 }).passthrough();
 
 const StoryboardImageGenerationSchema = z.object({
@@ -436,6 +451,7 @@ type PipelinePlan = {
     shotId: string;
     sceneId: string;
     durationSeconds: number;
+    durationIntent: string;
     model: string;
     needsReferenceImage: boolean;
     localVideoSource: string | null;
@@ -768,6 +784,63 @@ const distVideoPathForShot = (loaded: LoadedProjectConfig, shot: NormalizedShot)
   return path.join(loaded.distDir, `${shot.sceneId}.mp4`);
 };
 
+const UNIFORM_DURATION_MIN_SHOTS = 3;
+
+const normalizeTargetDuration = (target: number | {min: number; max: number}) => {
+  return typeof target === 'number' ? {min: target, max: target} : target;
+};
+
+const validateShotPacing = (loaded: LoadedProjectConfig, errors: string[], warnings: string[]) => {
+  const shots = loaded.normalizedShots;
+  const totalSeconds = shots.reduce((sum, shot) => sum + shot.durationSeconds, 0);
+  const blocksGeneration = loaded.assets.mode === 'pixverse';
+
+  if (shots.length >= UNIFORM_DURATION_MIN_SHOTS) {
+    const uniqueDurations = new Set(shots.map((shot) => shot.durationSeconds));
+    if (uniqueDurations.size === 1) {
+      const rawReason = loaded.storyboard.meta.uniform_duration_reason;
+      const reason = typeof rawReason === 'string' ? rawReason.trim() : '';
+      if (loaded.storyboard.meta.allow_uniform_duration && reason) {
+        warnings.push(`Uniform shot duration explicitly allowed by storyboard meta: ${reason}`);
+      } else {
+        const message =
+          `All ${shots.length} shots share the same duration (${shots[0].durationSeconds}s); ` +
+          'durations must follow each shot\'s narrative role before PixVerse generation. ' +
+          'Set varied shot.duration values, or set meta.allow_uniform_duration: true with meta.uniform_duration_reason only when the brief explicitly requires uniform pacing.';
+        if (blocksGeneration) {
+          errors.push(message);
+        } else {
+          warnings.push(message);
+        }
+      }
+    }
+  }
+
+  const target = loaded.storyboard.meta.target_duration_seconds;
+  if (target === undefined) {
+    const message =
+      'meta.target_duration_seconds is not set; add the brief Target Duration to the storyboard so total pacing can be checked.';
+    if (blocksGeneration) {
+      errors.push(message);
+    } else {
+      warnings.push(message);
+    }
+    return;
+  }
+
+  const {min, max} = normalizeTargetDuration(target);
+  if (totalSeconds < min || totalSeconds > max) {
+    const message =
+      `Total shot duration ${totalSeconds}s is outside meta.target_duration_seconds ${min}-${max}s; ` +
+      'rebalance per-shot durations to fit the story target before generation.';
+    if (blocksGeneration) {
+      errors.push(message);
+    } else {
+      warnings.push(message);
+    }
+  }
+};
+
 const validateConfig = (loaded: LoadedProjectConfig): ValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -815,6 +888,8 @@ const validateConfig = (loaded: LoadedProjectConfig): ValidationResult => {
   for (const shot of loaded.normalizedShots) {
     validateVideoModelForShot(shot, errors, warnings);
   }
+
+  validateShotPacing(loaded, errors, warnings);
 
   return {
     ok: errors.length === 0,
@@ -1066,6 +1141,7 @@ export const buildPipelinePlan = (loaded: LoadedProjectConfig): PipelinePlan => 
       shotId: shot.sourceId,
       sceneId: shot.sceneId,
       durationSeconds: shot.durationSeconds,
+      durationIntent: shot.notes || shot.objective || shot.musicSection,
       model: shot.model,
       needsReferenceImage:
         loaded.assets.mode === 'pixverse' &&
@@ -1104,11 +1180,11 @@ export const formatPipelinePlanMarkdown = (plan: PipelinePlan) => {
     '',
     '## Shots',
     '',
-    '| shot | scene | duration | model | ref image | estimated credits |',
-    '|------|-------|----------|-------|-----------|-------------------|',
+    '| shot | scene | duration | intent | model | ref image | estimated credits |',
+    '|------|-------|----------|--------|-------|-----------|-------------------|',
     ...plan.shots.map((shot, index) => {
       const estimate = plan.creditEstimate.perShot[index];
-      return `| ${shot.shotId} | ${shot.sceneId} | ${shot.durationSeconds}s | ${shot.model} | ${shot.needsReferenceImage ? 'yes' : 'no'} | ${formatCredits(estimate?.totalCredits ?? null)} |`;
+      return `| ${shot.shotId} | ${shot.sceneId} | ${shot.durationSeconds}s | ${shot.durationIntent.replace(/\|/g, '/')} | ${shot.model} | ${shot.needsReferenceImage ? 'yes' : 'no'} | ${formatCredits(estimate?.totalCredits ?? null)} |`;
     }),
     '',
   ];

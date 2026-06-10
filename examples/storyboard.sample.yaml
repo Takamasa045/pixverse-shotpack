@@ -6,6 +6,9 @@ meta:
   color_arc: "cool-to-warm"
   prompt_negative: "blurry, distorted faces, watermark, oversaturated, warped hands"
   workflow: "i2v"
+  target_duration_seconds:
+    min: 25
+    max: 30
 
 image_generation:
   model: "seedream-5.0-lite"

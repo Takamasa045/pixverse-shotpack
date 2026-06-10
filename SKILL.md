@@ -76,6 +76,8 @@ Director
 - workflow (`t2v` / `i2v`)
 - 推定クレジット消費量
 - shot ごとの model / duration / `multi_shot` / post_process 有無
+- 合計尺と `meta.target_duration_seconds`（brief の Target Duration）の比較
+- 尺配分の意図（どの shot をなぜ長く / 短くしたか）
 
 許可する操作:
 
@@ -86,6 +88,7 @@ Director
 備考:
 
 - storyboard 修正ループは 3 回を上限の目安にする
+- PixVerse 生成では、全 shot 一律 duration と `meta.target_duration_seconds` 不一致は validation error として扱う
 
 ### Gate 1.5: reference still approval
 
@@ -149,6 +152,8 @@ dry run は PixVerse CLI を呼ばず、`dist/dry-run-plan.json`、`dist/dry-run
 7. クレジット見積もりは `references/credit-estimation.md` を正とする
 8. `run-log.md` と `credits-report.json` は Assembler 完了前に必ず揃える
 9. `multi_shot` は opt-in。1 scene = 1 file の契約は崩さない
+10. duration は shot ごとに物語上の役割から決める。全 shot 一律の duration を既定にしない（`skills/director.skill.md` の Duration Design を正とする）
+11. 全 shot 一律 duration は、brief が明示的に要求し、`meta.allow_uniform_duration: true` と `meta.uniform_duration_reason` がある場合だけ許す
 
 ## File Contracts
 

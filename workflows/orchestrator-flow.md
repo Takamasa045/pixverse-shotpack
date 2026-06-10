@@ -40,12 +40,16 @@ director
 - workflow
 - 推定クレジット
 - post_process の有無
+- 合計尺と `meta.target_duration_seconds` の比較
+- 尺配分の意図
 
 操作:
 
 - `approve`
 - `revise`
 - `abort`
+
+PixVerse 生成へ進む前に、全 shot 一律 duration と `meta.target_duration_seconds` 不一致は validation error として止める。
 
 ### Gate 1.5
 

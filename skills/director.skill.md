@@ -26,6 +26,9 @@ meta:
   color_arc: string
   prompt_negative: string
   workflow: "t2v" | "i2v"
+  target_duration_seconds: {min: integer, max: integer}
+  allow_uniform_duration: false
+  uniform_duration_reason: string | null
 
 shots:
   - id: "shot-01"
@@ -47,16 +50,48 @@ shots:
 
 `workflow: i2v` の場合のみ `image_generation` を追加する。
 
+`meta.target_duration_seconds` には brief の Target Duration を転記する。単一値しかない場合は `min` と `max` に同じ値を入れる。
+`meta.allow_uniform_duration` は既定 `false`。brief が明示的に均等尺を要求する場合だけ `true` にし、`meta.uniform_duration_reason` に根拠を書く。
+
 ## Rules
 
 1. 標準 shot 数は `6-8`
-2. duration はモデル制約を超えない
+2. duration は shot ごとに物語上の役割から決め、モデル制約内に収める（詳細は Duration Design）
 3. `prompt_negative` には最低限 `blurry, distorted faces, watermark` を含める
 4. わびさびと余白を意識した prompt 設計にする
 5. セリフのローマ字表記は入れない
 6. Midjourney パラメータを混ぜない
 7. `notes` には制作意図だけを書き、CLI 手順は書かない
 8. `multi_shot` は 1 clip 内の内部カメラ遷移が必要なときだけ true
+
+## Duration Design
+
+duration を既定値で一律に埋めない。全 shot を同じ秒数（例: すべて 5 秒）にするのは設計放棄とみなす。各 shot の duration は物語上の役割から導く。
+
+### 設計手順
+
+1. brief の Target Duration を `meta.target_duration_seconds` に転記する
+2. 各 shot に役割を割り当てる（establish / detail / hero / action / transition / closing）
+3. 役割と brief の Tempo から初期値を置き、合計が target に収まるよう配分する
+4. モデル制約（`references/model-constraints.md`）の範囲に丸める
+
+### 役割別ガイド
+
+| 役割 | 目安 | 意図 |
+|------|------|------|
+| establish（導入・状況提示） | 4-6s | 視聴者が世界観に入る時間を確保する |
+| detail（質感・インサート） | 3-4s | 情報量が少ないので短く保ち、リズムを作る |
+| hero（主役・クライマックス） | 5-8s | 主役を見せ切る。最も厚く取る |
+| action（動作・インタラクション） | 4-6s | 動作が自然に完結する長さに合わせる |
+| transition（つなぎ） | 2-3s | テンポ調整用。長くしない |
+| closing（余韻・締め） | 6-10s | 余韻を残す。`post_process.extend` も候補 |
+
+### 調整ルール
+
+- brief の Tempo が slow なら各役割の上限側、fast なら下限側に寄せる
+- 固定 duration モデルは許容値へ丸める（`sora-2` 系は 4/8/12、`veo-3.1` 系は 4/6/8）
+- 隣接 shot の duration が同じになるのは構わない。全 shot 一律は brief に明示的な指定がある場合だけ許し、`meta.allow_uniform_duration: true` と `meta.uniform_duration_reason` を必須にする
+- 各 shot の `notes` に尺の意図を 1 句含める（例: 「余韻を残すため長め」）
 
 ## Workflow Selection
 
@@ -92,12 +127,17 @@ Orchestrator に渡す要約:
 - workflow
 - shot 数
 - 各 shot の `id`, `model`, `duration`, `multi_shot`, `post_process`
+- 合計尺と `meta.target_duration_seconds` の比較
+- 尺配分の意図（どの shot をなぜ長く / 短くしたか）
 - 推定クレジット
 
 ## Review Checklist
 
 - [ ] schema に必須キーが揃っている
 - [ ] duration が `references/model-constraints.md` の範囲内
+- [ ] duration が役割ベースで設計され、全 shot 一律になっていない（一律なら brief 指定が根拠としてある）
+- [ ] 合計尺が `meta.target_duration_seconds` に収まっている
+- [ ] PixVerse 生成前 validation で一律 duration / target 不一致の error が残っていない
 - [ ] `prompt_negative` が最低語句を含む
 - [ ] `workflow: i2v` なら `image_generation` がある
 - [ ] post_process は必要な shot だけ設定されている
