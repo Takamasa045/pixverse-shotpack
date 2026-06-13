@@ -18,7 +18,7 @@ allowed-tools: [Bash, Read, Write, Edit, Glob, Grep]
 3. Gate での承認を管理する
 4. サブエージェント間のファイル受け渡しと CLI 実行を管理する
 
-creative 判断は `skills/director.skill.md`、PixVerse CLI 実行は `skills/shot-generator.skill.md`、後処理は `skills/post-processor.skill.md`、manifest 構築は `skills/assembler.skill.md` を正とする。既定モデルは `v6` だが、C1 は CLI 値 `pixverse-c1` を使う。公式 API 名 `c1` が入力された場合は CLI 用に `pixverse-c1` へ正規化する。その他の最新 CLI 対応モデルは `references/model-constraints.md` を見て選ぶ。
+creative 判断は `skills/director.skill.md`、PixVerse CLI 実行は `skills/shot-generator.skill.md`、後処理は `skills/post-processor.skill.md`、manifest 構築は `skills/assembler.skill.md` を正とする。料理ショートの再現・横縦展開は `skills/campfire-cooking-video.skill.md` を先に参照する。既定モデルは `v6` だが、C1 は CLI 値 `pixverse-c1` を使う。公式 API 名 `c1` が入力された場合は CLI 用に `pixverse-c1` へ正規化する。`happyhorse-1.0`、`seedance-*`、`kling-*` などその他の最新 CLI 対応モデルは `references/model-constraints.md` を見て選ぶ。
 
 Remotion consumer 側の composition は `src/` を正とし、producer 契約は変更しない。consumer が参照する入口 manifest は通常 `dist/manifest.json` だが、ローカル preview では `public/shotpack-sample/manifest.json` を fallback として使える。
 
@@ -152,8 +152,9 @@ dry run は PixVerse CLI を呼ばず、`dist/dry-run-plan.json`、`dist/dry-run
 7. クレジット見積もりは `references/credit-estimation.md` を正とする
 8. `run-log.md` と `credits-report.json` は Assembler 完了前に必ず揃える
 9. `multi_shot` は opt-in。1 scene = 1 file の契約は崩さない
-10. duration は shot ごとに物語上の役割から決める。全 shot 一律の duration を既定にしない（`skills/director.skill.md` の Duration Design を正とする）
+10. duration は shot ごとに物語上の役割から決める。全 shot を一律の尺で割らない（例: 全カット 5 秒 / 6 秒のような均一割りは禁止）。均一割りは物語のリズムと shot 間の繋ぎを単調にする（`skills/director.skill.md` の Duration Design を正とする）
 11. 全 shot 一律 duration は、brief が明示的に要求し、`meta.allow_uniform_duration: true` と `meta.uniform_duration_reason` がある場合だけ許す
+12. 一貫性が要る作品（同一キャラ・背景・小道具が複数 shot に跨る）は、t2v 直行ではなく image-first で作る。まず画像生成で design bible を固めてから動画化する。手順: アンカー（世界 / キャラ / 場所）→ キャラ3面図・建物・小道具シート → 各 shot のキーフレーム（design bible を `--images` で参照）→ i2v（`--image`、必要なら `--audio`）。shot 間の一貫性を t2v の運任せにしない（`workflows/image-first-i2v-pipeline.md` を正とする）
 
 ## File Contracts
 
@@ -166,6 +167,7 @@ dry run は PixVerse CLI を呼ばず、`dist/dry-run-plan.json`、`dist/dry-run
 | Shot Generator skill | `skills/shot-generator.skill.md` |
 | Post-Processor skill | `skills/post-processor.skill.md` |
 | Assembler skill | `skills/assembler.skill.md` |
+| Campfire cooking video skill | `skills/campfire-cooking-video.skill.md` |
 | Manifest contract | `references/manifest-schema.md` |
 | Exit codes | `references/exit-codes.md` |
 | Credit heuristics | `references/credit-estimation.md` |
