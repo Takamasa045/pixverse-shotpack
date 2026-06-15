@@ -26,6 +26,15 @@ const sampleAsset = (file: string | null | undefined) => {
   return staticFile(`shotpack-sample/${file}`);
 };
 
+// textPolicy phrases that mean the deliverable must be clean footage.
+// Storyboard chrome remains useful for preview manifests, but not exports.
+const MEDIA_ONLY_SIGNALS = ['no visible text', 'no readable text', 'remotion only'];
+
+const isMediaOnly = (manifest: ShotpackManifest): boolean => {
+  const policy = manifest.project.textPolicy.toLowerCase();
+  return MEDIA_ONLY_SIGNALS.some((signal) => policy.includes(signal));
+};
+
 const SceneCard: React.FC<{
   manifest: ShotpackManifest;
   scene: ShotpackScene;
@@ -33,6 +42,7 @@ const SceneCard: React.FC<{
 }> = ({manifest, scene, sceneIndex}) => {
   const frame = useCurrentFrame();
   const {durationInFrames, fps} = useVideoConfig();
+  const mediaOnly = isMediaOnly(manifest);
   const accent = manifest.theme.accent;
   const text = manifest.theme.text;
   const background = manifest.theme.background;
@@ -114,171 +124,178 @@ const SceneCard: React.FC<{
       <AbsoluteFill
         style={{
           background:
-            'linear-gradient(180deg, rgba(5,8,15,0.12) 0%, rgba(5,8,15,0.3) 42%, rgba(5,8,15,0.72) 100%)',
+            mediaOnly
+              ? 'linear-gradient(180deg, rgba(3,8,7,0.04) 0%, rgba(3,8,7,0.08) 54%, rgba(3,8,7,0.22) 100%)'
+              : 'linear-gradient(180deg, rgba(5,8,15,0.12) 0%, rgba(5,8,15,0.3) 42%, rgba(5,8,15,0.72) 100%)',
         }}
       />
-      <AbsoluteFill
-        style={{
-          opacity: 0.18,
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
-          backgroundSize: '120px 120px',
-          mixBlendMode: 'soft-light',
-        }}
-      />
-      <AbsoluteFill
-        style={{
-          justifyContent: 'space-between',
-          padding: '72px',
-          color: text,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: 24,
-          }}
-        >
-          <div
+      {!mediaOnly ? (
+        <>
+          <AbsoluteFill
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-              maxWidth: 900,
-              opacity: overlayOpacity,
-              transform: `translateY(${interpolate(frame, [0, 24], [24, 0], {
-                extrapolateLeft: 'clamp',
-                extrapolateRight: 'clamp',
-              })}px)`,
+              opacity: 0.18,
+              backgroundImage:
+                'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
+              backgroundSize: '120px 120px',
+              mixBlendMode: 'soft-light',
+            }}
+          />
+          <AbsoluteFill
+            style={{
+              justifyContent: 'space-between',
+              padding: '72px',
+              color: text,
             }}
           >
             <div
               style={{
-                fontSize: 18,
-                letterSpacing: '0.28em',
-                textTransform: 'uppercase',
-                color: accent,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: 24,
               }}
             >
-              PixVerse Shotpack Sample
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                  maxWidth: 900,
+                  opacity: overlayOpacity,
+                  transform: `translateY(${interpolate(frame, [0, 24], [24, 0], {
+                    extrapolateLeft: 'clamp',
+                    extrapolateRight: 'clamp',
+                  })}px)`,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 18,
+                    letterSpacing: '0.28em',
+                    textTransform: 'uppercase',
+                    color: accent,
+                  }}
+                >
+                  PixVerse Shotpack Sample
+                </div>
+                <div
+                  style={{
+                    fontSize: 60,
+                    fontWeight: 700,
+                    lineHeight: 1.04,
+                  }}
+                >
+                  {manifest.project.name}
+                </div>
+              </div>
+              <div
+                style={{
+                  border: `1px solid ${accent}66`,
+                  padding: '16px 18px',
+                  backgroundColor: 'rgba(7, 10, 18, 0.45)',
+                  fontSize: 18,
+                  letterSpacing: '0.16em',
+                  color: `${text}CC`,
+                  opacity: overlayOpacity,
+                }}
+              >
+                {sceneLabel}
+              </div>
             </div>
             <div
               style={{
-                fontSize: 60,
-                fontWeight: 700,
-                lineHeight: 1.04,
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1.5fr) minmax(320px, 0.8fr)',
+                gap: 36,
+                alignItems: 'end',
               }}
             >
-              {manifest.project.name}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16,
+                  opacity: overlayOpacity,
+                  transform: `translateY(${interpolate(frame, [0, 24], [32, 0], {
+                    extrapolateLeft: 'clamp',
+                    extrapolateRight: 'clamp',
+                  })}px)`,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 24,
+                    letterSpacing: '0.2em',
+                    textTransform: 'uppercase',
+                    color: `${text}B8`,
+                  }}
+                >
+                  {scene.id}
+                </div>
+                <div
+                  style={{
+                    fontSize: 54,
+                    lineHeight: 1.08,
+                    fontWeight: 700,
+                    maxWidth: 1180,
+                  }}
+                >
+                  {title}
+                </div>
+                <div
+                  style={{
+                    fontSize: 22,
+                    lineHeight: 1.45,
+                    color: `${text}C8`,
+                    maxWidth: 1100,
+                  }}
+                >
+                  {scene.prompt}
+                </div>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 14,
+                  padding: '24px 28px',
+                  border: `1px solid ${accent}55`,
+                  backgroundColor: 'rgba(7, 10, 18, 0.62)',
+                  backdropFilter: 'blur(12px)',
+                  opacity: overlayOpacity,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 16,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: accent,
+                  }}
+                >
+                  Scene Notes
+                </div>
+                <div style={{fontSize: 24, lineHeight: 1.35, color: text}}>
+                  {scene.objective}
+                </div>
+                <div style={{fontSize: 20, lineHeight: 1.4, color: `${text}C8`}}>
+                  Emotion: {scene.emotion || 'neutral'}
+                </div>
+                <div style={{fontSize: 20, lineHeight: 1.4, color: `${text}C8`}}>
+                  Motif: {scene.motif || 'n/a'}
+                </div>
+              </div>
             </div>
-          </div>
-          <div
-            style={{
-              border: `1px solid ${accent}66`,
-              padding: '16px 18px',
-              backgroundColor: 'rgba(7, 10, 18, 0.45)',
-              fontSize: 18,
-              letterSpacing: '0.16em',
-              color: `${text}CC`,
-              opacity: overlayOpacity,
-            }}
-          >
-            {sceneLabel}
-          </div>
-        </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1.5fr) minmax(320px, 0.8fr)',
-            gap: 36,
-            alignItems: 'end',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
-              opacity: overlayOpacity,
-              transform: `translateY(${interpolate(frame, [0, 24], [32, 0], {
-                extrapolateLeft: 'clamp',
-                extrapolateRight: 'clamp',
-              })}px)`,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 24,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                color: `${text}B8`,
-              }}
-            >
-              {scene.id}
-            </div>
-            <div
-              style={{
-                fontSize: 54,
-                lineHeight: 1.08,
-                fontWeight: 700,
-                maxWidth: 1180,
-              }}
-            >
-              {title}
-            </div>
-            <div
-              style={{
-                fontSize: 22,
-                lineHeight: 1.45,
-                color: `${text}C8`,
-                maxWidth: 1100,
-              }}
-            >
-              {scene.prompt}
-            </div>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 14,
-              padding: '24px 28px',
-              border: `1px solid ${accent}55`,
-              backgroundColor: 'rgba(7, 10, 18, 0.62)',
-              backdropFilter: 'blur(12px)',
-              opacity: overlayOpacity,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 16,
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: accent,
-              }}
-            >
-              Scene Notes
-            </div>
-            <div style={{fontSize: 24, lineHeight: 1.35, color: text}}>
-              {scene.objective}
-            </div>
-            <div style={{fontSize: 20, lineHeight: 1.4, color: `${text}C8`}}>
-              Emotion: {scene.emotion || 'neutral'}
-            </div>
-            <div style={{fontSize: 20, lineHeight: 1.4, color: `${text}C8`}}>
-              Motif: {scene.motif || 'n/a'}
-            </div>
-          </div>
-        </div>
-      </AbsoluteFill>
+          </AbsoluteFill>
+        </>
+      ) : null}
     </AbsoluteFill>
   );
 };
 
 export const Shotpack: React.FC<ShotpackProps> = ({manifest}) => {
   const audioSrc = sampleAsset(manifest.audio.src);
+  const mediaOnly = isMediaOnly(manifest);
 
   return (
     <AbsoluteFill
@@ -287,7 +304,7 @@ export const Shotpack: React.FC<ShotpackProps> = ({manifest}) => {
       }}
     >
       {audioSrc ? <Audio src={audioSrc} /> : null}
-      <ShotpackAmbient3D seed={manifest.project.id} />
+      {!mediaOnly ? <ShotpackAmbient3D seed={manifest.project.id} /> : null}
       {manifest.scenes.map((scene, index) => (
         <Sequence
           key={scene.id}
