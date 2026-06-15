@@ -1,6 +1,9 @@
 # PixVerse Shotpack
 
-[English README](./README.md)
+## Languages / 言語
+
+- [English](./README.md)
+- [日本語](./README.ja.md)
 
 **AI に「こんな動画を作って」と伝えるだけで、企画から完成 MP4 まで自動で進む動画制作パイプラインです。**
 
@@ -129,9 +132,25 @@ npm run pipeline:doctor -- --format markdown
 
 Claude Code を開いて、自然言語で依頼するだけです。
 
-## Michibiki / HyperFrames 連携（オプション）
+## 自然言語で使う
+
+Shotpack は「コマンド集」ではなく、エージェントに自然言語で頼んで動かす制作ワークスペースとして使えます。作りたい動画を文章で伝えると、エージェントが `brief.md`、`storyboard.yaml`、`project.yaml`、dry-run、Gate 確認、生成、render までを必要に応じて進めます。
+
+コマンドは、自分で細かく制御したい場合や自動化したい場合の補助です。通常は次のように依頼します。
+
+| やりたいこと | 自然言語での頼み方 |
+|-------------|-------------------|
+| 最初から動画を作る | 「PixVerse Shotpack で 30 秒のシネマティックなプロモ動画を作って。brief と storyboard を作り、dry-run まで進めて Gate 1 で確認させて」 |
+| キャラや場所の一貫性を重視する | 「image-first の i2v で進めて。まず design bible と keyframe を作って、動画生成前に確認を取って」 |
+| 既存素材から続きだけ進める | 「今の `dist/` と `manifest.json` を確認して、既存素材から最終 MP4 だけ再 render して」 |
+| Michibiki に渡す | 「この Shotpack project を Michibiki 用の VideoSpec に export して、Editframe project を作れる状態にして」 |
+| Michibiki 側で編集を続ける | 「Shotpack から Michibiki handoff を実行して、編集 project と preview まで作って。cloud render は使わないで」 |
+
+## Michibiki 連携（オプション）
 
 Shotpack は、制作内容を Michibiki が扱いやすい `VideoSpec` に書き出せます。これはオプション連携です。Michibiki はこのリポジトリに同梱されず、Git submodule でもありません。
+
+Michibiki は、構造化された `VideoSpec` を読み取り、Editframe / HyperFrames / Remotion などの編集 project、preview、render workflow へ変換する別リポジトリの制作ルーターです。このリポジトリでは Shotpack が企画と PixVerse 素材生成を担当し、Michibiki はその計画を受け取って編集・納品側へつなぐ役割です。
 
 ### 1. Michibiki を別に用意する
 
@@ -146,22 +165,32 @@ node scripts/setup.mjs
 
 ```bash
 cd ../pixverse-shotpack
-./bin/pipeline export --config ./project.yaml --engine hyperframes
+./bin/pipeline export --config ./project.yaml --engine editframe
 ```
 
 このコマンドは PixVerse も Michibiki も呼びません。`dist/video-spec.json` と `dist/michibiki-handoff.json` を作るだけです。
+
+書き出した spec は Michibiki 側から直接読めます。
+
+```bash
+cd ../michibiki
+pnpm michibiki decide --spec ../pixverse-shotpack/dist/video-spec.json
+pnpm michibiki generate --spec ../pixverse-shotpack/dist/video-spec.json --engine editframe
+```
+
+Michibiki 側で生成される編集 project、preview、render 成果物は、Michibiki リポジトリ内の `outputs/jobs/<job-id>/` にまとまります。
 
 ### 3. Michibiki CLI まで呼びたい場合
 
 ```bash
 ./bin/pipeline export \
   --config ./project.yaml \
-  --engine hyperframes \
+  --engine editframe \
   --michibiki-path ../michibiki \
   --run-michibiki
 ```
 
-これは Michibiki の `generate` まで実行し、Michibiki の出力先は `dist/michibiki/` になります。最終 MP4 の render は Michibiki 側で確認してから実行してください。クラウド render が必要な場合は、明示的に `--allow-cloud-render` を付けます。
+これは Michibiki を `pnpm michibiki generate --spec dist/video-spec.json` として実行します。コマンドは Michibiki リポジトリ上で動くため、編集 project、preview、最終 render は Shotpack 内ではなく `../michibiki/outputs/jobs/<job-id>/` に保存されます。最終 MP4 の render は Michibiki 側で確認してから実行してください。クラウド render が必要な場合は、明示的に `--allow-cloud-render` を付けます。
 
 ### 出力の使い分け
 
@@ -169,6 +198,8 @@ cd ../pixverse-shotpack
 |------|------|
 | `dist/video-spec.json` | Michibiki 互換の企画・尺・scene・asset 情報 |
 | `dist/michibiki-handoff.json` | 実行コマンド、Michibiki パス、実行結果の記録 |
+| `../michibiki/outputs/jobs/<job-id>/` | Michibiki 側の編集 project、preview、render 成果物 |
+| `--engine editframe` | Editframe プロジェクトを作りたい場合 |
 | `--engine hyperframes` | HyperFrames 互換プロジェクトを作りたい場合 |
 | `--engine remotion` | Remotion 側へ寄せたい場合 |
 | `--engine auto` | Michibiki の router に判断させたい場合 |
@@ -246,7 +277,7 @@ cd ../pixverse-shotpack
 ./bin/pipeline run --config ./project.yaml --dry-run  # 予行演習
 ./bin/pipeline run --config ./project.yaml        # 本番実行
 ./bin/pipeline render --config ./project.yaml     # MP4 書き出し
-./bin/pipeline export --config ./project.yaml --engine hyperframes  # Michibiki 用に書き出し
+./bin/pipeline export --config ./project.yaml --engine editframe  # Michibiki 用に書き出し
 
 # Remotion だけ触る場合
 npm run start              # プレビュー画面を開く

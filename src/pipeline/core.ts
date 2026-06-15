@@ -1949,27 +1949,6 @@ const findExistingRefStills = (loaded: LoadedProjectConfig, shot: NormalizedShot
     .map((fileName) => path.join(loaded.distDir, fileName));
 };
 
-const buildMichibikiPrompt = (
-  loaded: LoadedProjectConfig,
-  durationSeconds: number,
-  aspectRatio: MichibikiVideoSpec['format']['aspectRatio'],
-) => {
-  const sceneLines = loaded.normalizedShots.map((shot) => {
-    const description = compactJoin([shot.objective, shot.emotion, shot.motif, shot.prompt], ' / ');
-    return `${shot.index + 1}. ${shot.sceneId} (${shot.durationSeconds}s): ${description}`;
-  });
-
-  return [
-    `Create a video from this PixVerse Shotpack storyboard: ${loaded.project.title}.`,
-    `Preserve the shot order, timing, and existing media assets where provided.`,
-    `Format: ${aspectRatio}, ${loaded.render.width}x${loaded.render.height}, ${loaded.render.fps}fps, ${durationSeconds}s.`,
-    loaded.briefText ? `Brief: ${briefToBody(loaded.briefText)}` : null,
-    `Scenes:\n${sceneLines.join('\n')}`,
-  ]
-    .filter((line): line is string => Boolean(line))
-    .join('\n\n');
-};
-
 const buildMichibikiVideoSpec = (
   loaded: LoadedProjectConfig,
   options: Required<Pick<MichibikiExportOptions, 'engine' | 'outputType'>> &
@@ -2067,7 +2046,7 @@ const buildMichibikiVideoSpec = (
     constraints.allowCloudRender = options.allowCloudRender;
   }
 
-  const videoSpec: MichibikiVideoSpec = {
+  return {
     id: sanitizeId(`shotpack-${loaded.project.slug}`),
     title: loaded.project.title,
     goal: compactJoin(
@@ -2112,13 +2091,10 @@ const buildMichibikiVideoSpec = (
     },
     constraints,
   };
-
-  return videoSpec;
 };
 
 const buildMichibikiCommand = (
-  loaded: LoadedProjectConfig,
-  videoSpec: MichibikiVideoSpec,
+  videoSpecPath: string,
   options: Required<Pick<MichibikiExportOptions, 'engine' | 'outputType'>> &
     Pick<MichibikiExportOptions, 'allowCloudRender' | 'licenseMode'>,
 ) => {
@@ -2126,18 +2102,8 @@ const buildMichibikiCommand = (
     'pnpm',
     'michibiki',
     'generate',
-    '--prompt',
-    buildMichibikiPrompt(loaded, videoSpec.format.durationSec, videoSpec.format.aspectRatio),
-    '--title',
-    videoSpec.title,
-    '--duration',
-    String(videoSpec.format.durationSec),
-    '--aspect-ratio',
-    videoSpec.format.aspectRatio,
-    '--output-type',
-    options.outputType,
-    '--outputs',
-    path.join(loaded.distDir, 'michibiki'),
+    '--spec',
+    videoSpecPath,
   ];
 
   if (options.engine !== 'auto') {
@@ -2152,12 +2118,6 @@ const buildMichibikiCommand = (
     args.push('--allow-cloud-render');
   }
 
-  for (const asset of videoSpec.assets) {
-    if (asset.type !== 'json') {
-      args.push('--asset', asset.source);
-    }
-  }
-
   return args;
 };
 
@@ -2165,7 +2125,7 @@ export const exportMichibikiHandoff = (
   loaded: LoadedProjectConfig,
   options: MichibikiExportOptions = {},
 ): MichibikiExportResult => {
-  const engine = options.engine ?? 'hyperframes';
+  const engine = options.engine ?? 'editframe';
   const outputType = options.outputType ?? 'mp4';
   const outputPath = resolveFrom(loaded.configDir, options.outputPath ?? path.join('dist', 'video-spec.json'));
   const handoffPath = resolveFrom(loaded.configDir, options.handoffPath ?? path.join('dist', 'michibiki-handoff.json'));
@@ -2176,7 +2136,7 @@ export const exportMichibikiHandoff = (
     licenseMode: options.licenseMode,
   };
   const videoSpec = buildMichibikiVideoSpec(loaded, normalizedOptions);
-  const command = buildMichibikiCommand(loaded, videoSpec, normalizedOptions);
+  const command = buildMichibikiCommand(outputPath, normalizedOptions);
   const michibikiPath = options.michibikiPath ? resolveFrom(loaded.configDir, options.michibikiPath) : null;
   const runMichibiki = options.runMichibiki === true;
   const dryRun = options.dryRun === true;

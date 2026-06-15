@@ -1,6 +1,9 @@
 # PixVerse Shotpack
 
-[日本語版 README](./README.ja.md)
+## Languages
+
+- [English](./README.md)
+- [日本語](./README.ja.md)
 
 **Tell an AI agent "make me a video like this" and it handles everything from planning to final MP4.**
 
@@ -129,9 +132,25 @@ npm run pipeline:doctor -- --format markdown
 
 Open Claude Code and describe what you want in plain language.
 
-## Michibiki / HyperFrames Integration (Optional)
+## Natural-Language First Usage
+
+You can treat Shotpack as an agent-operated production workspace. Start by saying what you want to make; the agent should translate that request into `brief.md`, `storyboard.yaml`, `project.yaml`, dry-run checks, Gates, generation, and render steps.
+
+Use commands only when you want direct control or automation. The normal entry point is a sentence like:
+
+| Goal | Natural-language request |
+|------|--------------------------|
+| Build a video from scratch | "Use PixVerse Shotpack to make a 30-second cinematic promo. Create the brief and storyboard, dry-run it, and stop at Gate 1 for review." |
+| Prioritize consistent characters or locations | "Use the image-first i2v flow. Build the design bible and keyframes first, then ask me before video generation." |
+| Continue from existing generated clips | "Inspect the current `dist/` and `manifest.json`, then re-render the final MP4 from the existing assets." |
+| Hand off to Michibiki | "Export this Shotpack project to Michibiki as a VideoSpec and prepare an Editframe project." |
+| Let Michibiki continue the edit | "Run the Michibiki handoff from Shotpack, create the editing project and preview, but do not use cloud rendering." |
+
+## Michibiki Integration (Optional)
 
 Shotpack can export a Michibiki-friendly `VideoSpec` from the current project. This is an optional handoff. Michibiki is not bundled in this repository and is not a Git submodule.
+
+Michibiki is a separate video-production router that reads a structured `VideoSpec` and turns it into an editing project, preview, or render workflow for engines such as Editframe, HyperFrames, or Remotion. In this repo, Shotpack handles planning and PixVerse asset generation; Michibiki can take that plan and continue the editing/delivery side.
 
 ### 1. Set up Michibiki separately
 
@@ -146,22 +165,32 @@ node scripts/setup.mjs
 
 ```bash
 cd ../pixverse-shotpack
-./bin/pipeline export --config ./project.yaml --engine hyperframes
+./bin/pipeline export --config ./project.yaml --engine editframe
 ```
 
 This command does not call PixVerse or Michibiki. It only writes `dist/video-spec.json` and `dist/michibiki-handoff.json`.
+
+You can also pass the exported spec to Michibiki directly:
+
+```bash
+cd ../michibiki
+pnpm michibiki decide --spec ../pixverse-shotpack/dist/video-spec.json
+pnpm michibiki generate --spec ../pixverse-shotpack/dist/video-spec.json --engine editframe
+```
+
+Michibiki keeps generated projects, previews, and render outputs in its own `outputs/jobs/<job-id>/` tree.
 
 ### 3. Invoke Michibiki CLI from Shotpack
 
 ```bash
 ./bin/pipeline export \
   --config ./project.yaml \
-  --engine hyperframes \
+  --engine editframe \
   --michibiki-path ../michibiki \
   --run-michibiki
 ```
 
-This runs Michibiki `generate` and writes Michibiki outputs under `dist/michibiki/`. Final MP4 rendering should still be confirmed and run from the Michibiki side. Add `--allow-cloud-render` only when cloud rendering is intentionally allowed.
+This runs Michibiki as `pnpm michibiki generate --spec dist/video-spec.json`. Because the command runs from the Michibiki repository, generated projects, previews, and final renders are saved under `../michibiki/outputs/jobs/<job-id>/`, not inside Shotpack. Final MP4 rendering should still be confirmed and run from the Michibiki side. Add `--allow-cloud-render` only when cloud rendering is intentionally allowed.
 
 ### Output Guide
 
@@ -169,6 +198,8 @@ This runs Michibiki `generate` and writes Michibiki outputs under `dist/michibik
 |--------|---------|
 | `dist/video-spec.json` | Michibiki-compatible plan, timing, scenes, and asset references |
 | `dist/michibiki-handoff.json` | Command, Michibiki path, and execution result record |
+| `../michibiki/outputs/jobs/<job-id>/` | Michibiki editing, preview, and render artifacts |
+| `--engine editframe` | Prefer an Editframe project |
 | `--engine hyperframes` | Prefer a HyperFrames-compatible project |
 | `--engine remotion` | Prefer a Remotion project |
 | `--engine auto` | Let Michibiki's router choose the engine |
@@ -246,7 +277,7 @@ If you prefer running commands yourself instead of using the agent:
 ./bin/pipeline run --config ./project.yaml --dry-run  # Dry run
 ./bin/pipeline run --config ./project.yaml        # Production run
 ./bin/pipeline render --config ./project.yaml     # Render MP4
-./bin/pipeline export --config ./project.yaml --engine hyperframes  # Export for Michibiki
+./bin/pipeline export --config ./project.yaml --engine editframe  # Export for Michibiki
 
 # Remotion only
 npm run start              # Open preview
