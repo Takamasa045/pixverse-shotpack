@@ -1,9 +1,120 @@
 # PixVerse Shotpack
 
-## Languages
+## Language Switch
 
-- [English](./README.md)
-- [日本語](./README.ja.md)
+[English](#en) | [日本語](#ja) | [中文](#zh) | [Español](#es) | [Français](#fr) | [Deutsch](#de)
+
+All language sections live in this README. The detailed command reference is shared below the language summaries.
+
+<a id="en"></a>
+## English
+
+**Tell an AI agent "make me a video like this" and it handles everything from planning to final MP4.**
+
+PixVerse Shotpack turns a plain-language video request into `brief.md`, `storyboard.yaml`, `project.yaml`, PixVerse-generated clips, a Remotion manifest, and a final MP4.
+
+Start with a natural-language request:
+
+| Goal | What to say |
+|------|-------------|
+| Build from scratch | "Use PixVerse Shotpack to make a 30-second cinematic promo. Create the brief and storyboard, dry-run it, and stop at Gate 1." |
+| Keep characters or places consistent | "Use the image-first i2v flow. Build the design bible and keyframes first." |
+| Continue from existing assets | "Inspect `dist/` and `manifest.json`, then re-render the final MP4." |
+| Hand off to Michibiki | "Export this Shotpack project to Michibiki as a VideoSpec and prepare an Editframe project." |
+
+Michibiki is optional. Shotpack handles planning and PixVerse asset generation; Michibiki can continue from the exported `VideoSpec` into Editframe, HyperFrames, or Remotion workflows.
+
+<a id="ja"></a>
+## 日本語
+
+**AI に「こんな動画を作って」と伝えるだけで、企画から完成 MP4 まで進める制作パイプラインです。**
+
+PixVerse Shotpack は、自然言語の動画依頼を `brief.md`、`storyboard.yaml`、`project.yaml`、PixVerse 生成素材、Remotion 用 manifest、最終 MP4 へつなげます。
+
+基本はコマンドではなく、自然言語で依頼します。
+
+| やりたいこと | 頼み方 |
+|-------------|--------|
+| 最初から作る | 「PixVerse Shotpack で 30 秒のシネマティックなプロモ動画を作って。brief と storyboard を作り、dry-run まで進めて Gate 1 で確認させて」 |
+| キャラや場所を揃える | 「image-first の i2v で進めて。まず design bible と keyframe を作って」 |
+| 既存素材から続ける | 「今の `dist/` と `manifest.json` を確認して、既存素材から最終 MP4 だけ再 render して」 |
+| Michibiki に渡す | 「この Shotpack project を Michibiki 用の VideoSpec に export して、Editframe project を作れる状態にして」 |
+
+Michibiki はオプションです。Shotpack が企画と PixVerse 素材生成を担当し、Michibiki は書き出された `VideoSpec` をもとに Editframe / HyperFrames / Remotion の編集・納品 workflow へつなぎます。
+
+<a id="zh"></a>
+## 中文
+
+**只要告诉 AI 代理“我想做这样的视频”，它就能从企划推进到最终 MP4。**
+
+PixVerse Shotpack 会把自然语言的视频需求整理成 `brief.md`、`storyboard.yaml`、`project.yaml`，生成 PixVerse 素材，构建 Remotion manifest，并输出最终 MP4。
+
+建议先用自然语言发起任务：
+
+| 目标 | 可以这样说 |
+|------|------------|
+| 从零开始制作 | "用 PixVerse Shotpack 制作一个 30 秒的电影感宣传视频。先创建 brief 和 storyboard，执行 dry-run，并在 Gate 1 停下来让我确认。" |
+| 保持角色或场景一致 | "使用 image-first 的 i2v 流程。先建立 design bible 和 keyframe。" |
+| 使用已有素材继续 | "检查 `dist/` 和 `manifest.json`，然后用现有素材重新渲染最终 MP4。" |
+| 交接给 Michibiki | "把这个 Shotpack project 导出为 Michibiki 用的 VideoSpec，并准备一个 Editframe project。" |
+
+Michibiki 是可选的独立项目。Shotpack 负责企划和 PixVerse 素材生成；Michibiki 可以读取导出的 `VideoSpec`，继续生成 Editframe、HyperFrames 或 Remotion 工作流。
+
+<a id="es"></a>
+## Español
+
+**Dile a un agente de IA "hazme un video como este" y Shotpack lo lleva desde la planificación hasta el MP4 final.**
+
+PixVerse Shotpack convierte una solicitud en lenguaje natural en `brief.md`, `storyboard.yaml`, `project.yaml`, clips generados con PixVerse, un manifest para Remotion y un MP4 final.
+
+Empieza con una petición en lenguaje natural:
+
+| Objetivo | Qué decir |
+|----------|-----------|
+| Crear desde cero | "Usa PixVerse Shotpack para crear un promo cinematográfico de 30 segundos. Crea el brief y el storyboard, ejecuta el dry-run y detente en Gate 1." |
+| Mantener personajes o lugares consistentes | "Usa el flujo image-first i2v. Primero crea el design bible y los keyframes." |
+| Continuar con assets existentes | "Revisa `dist/` y `manifest.json`, y vuelve a renderizar el MP4 final con los assets existentes." |
+| Enviar a Michibiki | "Exporta este proyecto Shotpack a Michibiki como VideoSpec y prepara un proyecto Editframe." |
+
+Michibiki es opcional. Shotpack se encarga de la planificación y de generar assets con PixVerse; Michibiki puede continuar desde el `VideoSpec` exportado hacia flujos de Editframe, HyperFrames o Remotion.
+
+<a id="fr"></a>
+## Français
+
+**Demandez à un agent IA "crée une vidéo comme ceci" et Shotpack gère le parcours jusqu'au MP4 final.**
+
+PixVerse Shotpack transforme une demande en langage naturel en `brief.md`, `storyboard.yaml`, `project.yaml`, clips générés par PixVerse, manifest Remotion et MP4 final.
+
+Commencez avec une demande en langage naturel :
+
+| Objectif | Formulation |
+|----------|-------------|
+| Créer depuis zéro | "Utilise PixVerse Shotpack pour créer une promo cinématique de 30 secondes. Crée le brief et le storyboard, lance le dry-run, puis arrête-toi à Gate 1." |
+| Garder des personnages ou lieux cohérents | "Utilise le flux image-first i2v. Crée d'abord le design bible et les keyframes." |
+| Continuer avec des assets existants | "Inspecte `dist/` et `manifest.json`, puis rends à nouveau le MP4 final avec les assets existants." |
+| Passer à Michibiki | "Exporte ce projet Shotpack vers Michibiki en VideoSpec et prépare un projet Editframe." |
+
+Michibiki est optionnel. Shotpack gère la planification et la génération d'assets PixVerse ; Michibiki peut reprendre le `VideoSpec` exporté pour produire des workflows Editframe, HyperFrames ou Remotion.
+
+<a id="de"></a>
+## Deutsch
+
+**Sag einem KI-Agenten "erstelle mir so ein Video", und Shotpack begleitet den Weg bis zur fertigen MP4-Datei.**
+
+PixVerse Shotpack verwandelt eine Anfrage in natürlicher Sprache in `brief.md`, `storyboard.yaml`, `project.yaml`, PixVerse-Clips, ein Remotion-Manifest und eine finale MP4.
+
+Starte mit einer natürlichen Anfrage:
+
+| Ziel | Beispiel |
+|------|----------|
+| Von Grund auf erstellen | "Nutze PixVerse Shotpack, um ein 30-sekündiges cinematisches Promo-Video zu erstellen. Erstelle brief und storyboard, führe den dry-run aus und halte bei Gate 1 an." |
+| Figuren oder Orte konsistent halten | "Nutze den image-first i2v Ablauf. Erstelle zuerst die design bible und die keyframes." |
+| Mit vorhandenen Assets fortfahren | "Prüfe `dist/` und `manifest.json`, dann rendere die finale MP4 mit den vorhandenen Assets neu." |
+| An Michibiki übergeben | "Exportiere dieses Shotpack project als VideoSpec für Michibiki und bereite ein Editframe project vor." |
+
+Michibiki ist optional. Shotpack übernimmt Planung und PixVerse-Asset-Erzeugung; Michibiki kann das exportierte `VideoSpec` in Editframe-, HyperFrames- oder Remotion-Workflows weiterführen.
+
+## Technical Reference
 
 **Tell an AI agent "make me a video like this" and it handles everything from planning to final MP4.**
 

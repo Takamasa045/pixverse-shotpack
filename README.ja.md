@@ -2,8 +2,9 @@
 
 ## Languages / 言語
 
-- [English](./README.md)
-- [日本語](./README.ja.md)
+多言語切替は [README.md](./README.md) 内に統合しました。
+
+[English](./README.md#en) | [日本語](./README.md#ja) | [中文](./README.md#zh) | [Español](./README.md#es) | [Français](./README.md#fr) | [Deutsch](./README.md#de)
 
 **AI に「こんな動画を作って」と伝えるだけで、企画から完成 MP4 まで自動で進む動画制作パイプラインです。**
 
