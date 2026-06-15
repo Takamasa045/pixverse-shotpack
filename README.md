@@ -15,6 +15,19 @@ PixVerse Shotpack is a template that lets you describe a video in plain language
 
 No manual commands needed. Just talk to the agent.
 
+## What It Does / Does Not Include
+
+This repository is the Shotpack pipeline itself. Cloning it does not automatically install external services or separate repositories.
+
+| Goal | Requirements |
+|------|--------------|
+| Config checks / dry runs | This repo + `npm install` |
+| PixVerse asset generation | PixVerse CLI, auth, and credits |
+| Remotion MP4 rendering | This repo's npm dependencies |
+| Michibiki / HyperFrames handoff | A separate Michibiki clone/setup |
+
+In other words, cloning Shotpack alone is not enough to run PixVerse generation or Michibiki / HyperFrames video generation end to end.
+
 ## How the Sub-Agents Work
 
 The pipeline runs like a film crew: one **director** coordinating four **specialist roles**. Between each step, you get a **checkpoint (Gate)** where you can approve, request changes, or stop.
@@ -116,6 +129,50 @@ npm run pipeline:doctor -- --format markdown
 
 Open Claude Code and describe what you want in plain language.
 
+## Michibiki / HyperFrames Integration (Optional)
+
+Shotpack can export a Michibiki-friendly `VideoSpec` from the current project. This is an optional handoff. Michibiki is not bundled in this repository and is not a Git submodule.
+
+### 1. Set up Michibiki separately
+
+```bash
+cd ..
+git clone https://github.com/Takamasa045/michibiki.git
+cd michibiki
+node scripts/setup.mjs
+```
+
+### 2. Export handoff files from Shotpack
+
+```bash
+cd ../pixverse-shotpack
+./bin/pipeline export --config ./project.yaml --engine hyperframes
+```
+
+This command does not call PixVerse or Michibiki. It only writes `dist/video-spec.json` and `dist/michibiki-handoff.json`.
+
+### 3. Invoke Michibiki CLI from Shotpack
+
+```bash
+./bin/pipeline export \
+  --config ./project.yaml \
+  --engine hyperframes \
+  --michibiki-path ../michibiki \
+  --run-michibiki
+```
+
+This runs Michibiki `generate` and writes Michibiki outputs under `dist/michibiki/`. Final MP4 rendering should still be confirmed and run from the Michibiki side. Add `--allow-cloud-render` only when cloud rendering is intentionally allowed.
+
+### Output Guide
+
+| Output | Purpose |
+|--------|---------|
+| `dist/video-spec.json` | Michibiki-compatible plan, timing, scenes, and asset references |
+| `dist/michibiki-handoff.json` | Command, Michibiki path, and execution result record |
+| `--engine hyperframes` | Prefer a HyperFrames-compatible project |
+| `--engine remotion` | Prefer a Remotion project |
+| `--engine auto` | Let Michibiki's router choose the engine |
+
 ## Example Prompts
 
 | What you want | What to say |
@@ -127,6 +184,7 @@ Open Claude Code and describe what you want in plain language.
 | Run the full pipeline | "Generate the shotpack and render the final MP4." |
 | Re-render from existing assets | "Re-render from the current manifest." |
 | Just check the video editor | "Start Remotion and check Shotpack." |
+| Handoff to Michibiki / HyperFrames | "Export this for Michibiki." |
 
 ## Two Production Modes
 
@@ -188,6 +246,7 @@ If you prefer running commands yourself instead of using the agent:
 ./bin/pipeline run --config ./project.yaml --dry-run  # Dry run
 ./bin/pipeline run --config ./project.yaml        # Production run
 ./bin/pipeline render --config ./project.yaml     # Render MP4
+./bin/pipeline export --config ./project.yaml --engine hyperframes  # Export for Michibiki
 
 # Remotion only
 npm run start              # Open preview
@@ -195,6 +254,7 @@ npm run render:shotpack    # Render MP4
 ```
 
 Dry runs do not call PixVerse. They write `dist/dry-run-plan.json`, `dist/dry-run.md`, and `dist/dry-run-manifest.json`.
+`export` does not call PixVerse. It writes `dist/video-spec.json` and `dist/michibiki-handoff.json` from the storyboard and any assets it can find.
 
 ## Learn More
 

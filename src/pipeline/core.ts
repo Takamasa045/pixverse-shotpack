@@ -158,7 +158,7 @@ type ProjectConfigInput = z.infer<typeof ProjectConfigSchema>;
 type StoryboardInput = z.infer<typeof StoryboardSchema>;
 type StoryboardShot = z.infer<typeof StoryboardShotSchema>;
 
-export type PipelineCommand = 'doctor' | 'plan' | 'render' | 'run' | 'validate';
+export type PipelineCommand = 'doctor' | 'export' | 'plan' | 'render' | 'run' | 'validate';
 
 export type LoadedProjectConfig = {
   configPath: string;
@@ -461,7 +461,7 @@ type PipelinePlan = {
 
 export type ExecutePipelineOptions = {
   dryRun: boolean;
-  mode: Exclude<PipelineCommand, 'doctor' | 'plan' | 'validate'>;
+  mode: Exclude<PipelineCommand, 'doctor' | 'export' | 'plan' | 'validate'>;
   runId?: string;
 };
 
@@ -474,6 +474,105 @@ export type ExecutePipelineResult = {
     planPath: string;
     summaryPath: string;
     manifestPath: string;
+  };
+};
+
+export type MichibikiEngine = 'auto' | 'editframe' | 'hyperframes' | 'remotion';
+export type MichibikiOutputType = 'code' | 'mp4' | 'preview' | 'project' | 'webm';
+export type MichibikiLicenseMode = 'client-work' | 'commercial' | 'oss' | 'personal';
+
+type MichibikiAsset = {
+  id: string;
+  type: 'audio' | 'image' | 'json' | 'subtitle' | 'url' | 'video';
+  source: string;
+  usage?: 'avatar' | 'background' | 'broll' | 'data' | 'music' | 'voice';
+};
+
+type MichibikiVideoSpec = {
+  id: string;
+  title: string;
+  goal: string;
+  format: {
+    aspectRatio: '1:1' | '16:9' | '4:5' | '9:16';
+    width: number;
+    height: number;
+    fps: number;
+    durationSec: number;
+  };
+  style: {
+    mood: string;
+    visualTone: string;
+    motionStyle: string;
+    reference?: string;
+  };
+  content: {
+    script?: string;
+    captions?: boolean;
+    scenes: Array<{
+      id: string;
+      order: number;
+      durationSec: number;
+      description: string;
+      text?: string;
+      assets?: string[];
+      camera?: string;
+      transition?: string;
+      motion?: string;
+    }>;
+    cta?: string;
+  };
+  assets: MichibikiAsset[];
+  output: {
+    type: MichibikiOutputType;
+    needsDownload: boolean;
+  };
+  constraints: {
+    enginePreference?: Exclude<MichibikiEngine, 'auto'>;
+    licenseMode?: MichibikiLicenseMode;
+    allowCloudRender?: boolean;
+  };
+};
+
+export type MichibikiExportOptions = {
+  outputPath?: string;
+  handoffPath?: string;
+  engine?: MichibikiEngine;
+  outputType?: MichibikiOutputType;
+  licenseMode?: MichibikiLicenseMode;
+  allowCloudRender?: boolean;
+  michibikiPath?: string;
+  runMichibiki?: boolean;
+  dryRun?: boolean;
+};
+
+export type MichibikiExportResult = {
+  ok: boolean;
+  generatedAt: string;
+  project: {
+    slug: string;
+    title: string;
+  };
+  source: {
+    configPath: string;
+    storyboardPath: string;
+    briefPath: string | null;
+    manifestPath: string;
+  };
+  videoSpecPath: string;
+  handoffPath: string;
+  videoSpec: MichibikiVideoSpec;
+  michibiki: {
+    optional: true;
+    path: string | null;
+    engine: MichibikiEngine;
+    command: string[];
+    cwd: string | null;
+    ran: boolean;
+    dryRun: boolean;
+    status: number | null;
+    stdout: string;
+    stderr: string;
+    note: string;
   };
 };
 
@@ -1787,6 +1886,371 @@ const buildManifest = (
     },
     scenes,
   };
+};
+
+const sanitizeId = (value: string) => {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'shotpack';
+};
+
+const compactJoin = (values: Array<string | null | undefined>, separator = ' ') => {
+  return values
+    .map((value) => (typeof value === 'string' ? value.trim() : ''))
+    .filter((value) => value.length > 0)
+    .join(separator);
+};
+
+const normalizeMichibikiAspectRatio = (
+  width: number,
+  height: number,
+): MichibikiVideoSpec['format']['aspectRatio'] => {
+  const actual = width / height;
+  const candidates: Array<{label: MichibikiVideoSpec['format']['aspectRatio']; ratio: number}> = [
+    {label: '16:9', ratio: 16 / 9},
+    {label: '9:16', ratio: 9 / 16},
+    {label: '1:1', ratio: 1},
+    {label: '4:5', ratio: 4 / 5},
+  ];
+
+  return candidates.reduce((best, candidate) => {
+    return Math.abs(candidate.ratio - actual) < Math.abs(best.ratio - actual) ? candidate : best;
+  }).label;
+};
+
+const shouldRequestMichibikiCaptions = (textPolicy: string) => {
+  const normalized = textPolicy.toLowerCase();
+  if (
+    normalized.includes('no visible text') ||
+    normalized.includes('no text') ||
+    normalized.includes('no subtitles') ||
+    normalized.includes('no captions') ||
+    textPolicy.includes('文字なし') ||
+    textPolicy.includes('字幕なし') ||
+    textPolicy.includes('入れない')
+  ) {
+    return false;
+  }
+
+  return textPolicy.trim().length > 0;
+};
+
+const findExistingRefStills = (loaded: LoadedProjectConfig, shot: NormalizedShot) => {
+  if (!fs.existsSync(loaded.distDir)) {
+    return [];
+  }
+
+  const prefix = `ref-shot-${sceneNumber(shot.index)}`;
+  return fs
+    .readdirSync(loaded.distDir)
+    .filter((fileName) => fileName.startsWith(prefix))
+    .map((fileName) => path.join(loaded.distDir, fileName));
+};
+
+const buildMichibikiPrompt = (
+  loaded: LoadedProjectConfig,
+  durationSeconds: number,
+  aspectRatio: MichibikiVideoSpec['format']['aspectRatio'],
+) => {
+  const sceneLines = loaded.normalizedShots.map((shot) => {
+    const description = compactJoin([shot.objective, shot.emotion, shot.motif, shot.prompt], ' / ');
+    return `${shot.index + 1}. ${shot.sceneId} (${shot.durationSeconds}s): ${description}`;
+  });
+
+  return [
+    `Create a video from this PixVerse Shotpack storyboard: ${loaded.project.title}.`,
+    `Preserve the shot order, timing, and existing media assets where provided.`,
+    `Format: ${aspectRatio}, ${loaded.render.width}x${loaded.render.height}, ${loaded.render.fps}fps, ${durationSeconds}s.`,
+    loaded.briefText ? `Brief: ${briefToBody(loaded.briefText)}` : null,
+    `Scenes:\n${sceneLines.join('\n')}`,
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join('\n\n');
+};
+
+const buildMichibikiVideoSpec = (
+  loaded: LoadedProjectConfig,
+  options: Required<Pick<MichibikiExportOptions, 'engine' | 'outputType'>> &
+    Pick<MichibikiExportOptions, 'allowCloudRender' | 'licenseMode'>,
+) => {
+  const durationSeconds = loaded.normalizedShots.reduce((sum, shot) => sum + shot.durationSeconds, 0);
+  const aspectRatio = normalizeMichibikiAspectRatio(loaded.render.width, loaded.render.height);
+  const assets: MichibikiAsset[] = [];
+  const assetIdsByScene = new Map<string, string[]>();
+  const seenAssetSources = new Set<string>();
+
+  const addAsset = (asset: MichibikiAsset) => {
+    const source = resolveFrom(loaded.configDir, asset.source);
+    if (!fs.existsSync(source) || seenAssetSources.has(source)) {
+      return null;
+    }
+
+    const normalized = {
+      ...asset,
+      source,
+    };
+    assets.push(normalized);
+    seenAssetSources.add(source);
+    return normalized.id;
+  };
+
+  const sourceDir = resolveFrom(loaded.configDir, loaded.assets.sourceDir);
+  const sourceAudio = path.join(sourceDir, loaded.assets.audio);
+  const distAudio = path.join(loaded.distDir, 'audio', path.basename(sourceAudio));
+  addAsset({
+    id: 'music-track',
+    type: 'audio',
+    source: fs.existsSync(distAudio) ? distAudio : sourceAudio,
+    usage: 'music',
+  });
+
+  const manifestPath = path.join(loaded.distDir, 'manifest.json');
+  addAsset({
+    id: 'shotpack-manifest',
+    type: 'json',
+    source: manifestPath,
+    usage: 'data',
+  });
+
+  for (const shot of loaded.normalizedShots) {
+    const sceneAssetIds: string[] = [];
+    const distVideo = distVideoPathForShot(loaded, shot);
+    const localVideo = localAssetPathForShot(loaded, shot, 'video');
+    const videoAssetId = addAsset({
+      id: `${shot.sceneId}-video`,
+      type: 'video',
+      source: fs.existsSync(distVideo) ? distVideo : localVideo,
+      usage: 'broll',
+    });
+    if (videoAssetId) {
+      sceneAssetIds.push(videoAssetId);
+    }
+
+    const distStills = findExistingRefStills(loaded, shot);
+    const localStill = localAssetPathForShot(loaded, shot, 'still');
+    const stillSource = distStills[0] ?? localStill;
+    const stillAssetId = addAsset({
+      id: `${shot.sceneId}-still`,
+      type: 'image',
+      source: stillSource,
+      usage: 'background',
+    });
+    if (stillAssetId) {
+      sceneAssetIds.push(stillAssetId);
+    }
+
+    assetIdsByScene.set(shot.sceneId, sceneAssetIds);
+  }
+
+  const emotions = Array.from(new Set(loaded.normalizedShots.map((shot) => shot.emotion).filter(Boolean)));
+  const transitions = Array.from(new Set(loaded.normalizedShots.map((shot) => shot.transition).filter(Boolean)));
+  const visualTone = compactJoin(
+    [
+      loaded.manifestOptions.artistNotes,
+      loaded.manifestOptions.referenceNotes,
+      loaded.manifestOptions.protagonistPolicy,
+      loaded.manifestOptions.editPolicy,
+    ],
+    ' ',
+  );
+
+  const constraints: MichibikiVideoSpec['constraints'] = {};
+  if (options.engine !== 'auto') {
+    constraints.enginePreference = options.engine;
+  }
+  if (options.licenseMode) {
+    constraints.licenseMode = options.licenseMode;
+  }
+  if (typeof options.allowCloudRender === 'boolean') {
+    constraints.allowCloudRender = options.allowCloudRender;
+  }
+
+  const videoSpec: MichibikiVideoSpec = {
+    id: sanitizeId(`shotpack-${loaded.project.slug}`),
+    title: loaded.project.title,
+    goal: compactJoin(
+      [
+        briefToBody(loaded.briefText) || loaded.storyboard.meta.title,
+        'Preserve the Shotpack storyboard timing, sequence, and media continuity.',
+      ],
+      ' ',
+    ),
+    format: {
+      aspectRatio,
+      width: loaded.render.width,
+      height: loaded.render.height,
+      fps: loaded.render.fps,
+      durationSec: durationSeconds,
+    },
+    style: {
+      mood: emotions.join(', ') || 'story-driven',
+      visualTone: visualTone || 'Use the Shotpack visual language and provided reference media.',
+      motionStyle: transitions.join(', ') || loaded.generation.workflow,
+      reference: loaded.manifestOptions.referenceNotes ?? undefined,
+    },
+    content: {
+      script: loaded.briefText ?? undefined,
+      captions: shouldRequestMichibikiCaptions(loaded.manifestOptions.textPolicy),
+      scenes: loaded.normalizedShots.map((shot) => ({
+        id: shot.sceneId,
+        order: shot.index + 1,
+        durationSec: shot.durationSeconds,
+        description: compactJoin([shot.objective, shot.prompt], ' '),
+        text: shot.hookText ?? undefined,
+        assets: assetIdsByScene.get(shot.sceneId),
+        camera: shot.motif || undefined,
+        transition: shot.transition || undefined,
+        motion: shot.notes || shot.musicSection || undefined,
+      })),
+    },
+    assets,
+    output: {
+      type: options.outputType,
+      needsDownload: options.outputType === 'mp4' || options.outputType === 'webm',
+    },
+    constraints,
+  };
+
+  return videoSpec;
+};
+
+const buildMichibikiCommand = (
+  loaded: LoadedProjectConfig,
+  videoSpec: MichibikiVideoSpec,
+  options: Required<Pick<MichibikiExportOptions, 'engine' | 'outputType'>> &
+    Pick<MichibikiExportOptions, 'allowCloudRender' | 'licenseMode'>,
+) => {
+  const args = [
+    'pnpm',
+    'michibiki',
+    'generate',
+    '--prompt',
+    buildMichibikiPrompt(loaded, videoSpec.format.durationSec, videoSpec.format.aspectRatio),
+    '--title',
+    videoSpec.title,
+    '--duration',
+    String(videoSpec.format.durationSec),
+    '--aspect-ratio',
+    videoSpec.format.aspectRatio,
+    '--output-type',
+    options.outputType,
+    '--outputs',
+    path.join(loaded.distDir, 'michibiki'),
+  ];
+
+  if (options.engine !== 'auto') {
+    args.push('--engine', options.engine);
+  }
+
+  if (options.licenseMode) {
+    args.push('--license-mode', options.licenseMode);
+  }
+
+  if (options.allowCloudRender) {
+    args.push('--allow-cloud-render');
+  }
+
+  for (const asset of videoSpec.assets) {
+    if (asset.type !== 'json') {
+      args.push('--asset', asset.source);
+    }
+  }
+
+  return args;
+};
+
+export const exportMichibikiHandoff = (
+  loaded: LoadedProjectConfig,
+  options: MichibikiExportOptions = {},
+): MichibikiExportResult => {
+  const engine = options.engine ?? 'hyperframes';
+  const outputType = options.outputType ?? 'mp4';
+  const outputPath = resolveFrom(loaded.configDir, options.outputPath ?? path.join('dist', 'video-spec.json'));
+  const handoffPath = resolveFrom(loaded.configDir, options.handoffPath ?? path.join('dist', 'michibiki-handoff.json'));
+  const normalizedOptions = {
+    engine,
+    outputType,
+    allowCloudRender: options.allowCloudRender,
+    licenseMode: options.licenseMode,
+  };
+  const videoSpec = buildMichibikiVideoSpec(loaded, normalizedOptions);
+  const command = buildMichibikiCommand(loaded, videoSpec, normalizedOptions);
+  const michibikiPath = options.michibikiPath ? resolveFrom(loaded.configDir, options.michibikiPath) : null;
+  const runMichibiki = options.runMichibiki === true;
+  const dryRun = options.dryRun === true;
+
+  ensureDir(path.dirname(outputPath));
+  ensureDir(path.dirname(handoffPath));
+  fs.writeFileSync(outputPath, JSON.stringify(videoSpec, null, 2));
+
+  let status: number | null = null;
+  let stdout = '';
+  let stderr = '';
+  let ran = false;
+
+  if (runMichibiki && !dryRun) {
+    if (!michibikiPath) {
+      throw new Error('--run-michibiki requires --michibiki-path <path-to-michibiki>');
+    }
+
+    if (!fs.existsSync(path.join(michibikiPath, 'package.json'))) {
+      throw new Error(`Michibiki path does not look like a repo root: ${michibikiPath}`);
+    }
+
+    const result = spawnSync(command[0], command.slice(1), {
+      cwd: michibikiPath,
+      encoding: 'utf8',
+    });
+    ran = true;
+    status = result.status;
+    stdout = typeof result.stdout === 'string' ? result.stdout.trim() : '';
+    stderr = typeof result.stderr === 'string' ? result.stderr.trim() : '';
+
+    if (result.error) {
+      stderr = compactJoin([stderr, result.error.message], '\n');
+    }
+  }
+
+  const handoff: MichibikiExportResult = {
+    ok: !runMichibiki || dryRun || status === 0,
+    generatedAt: new Date().toISOString(),
+    project: {
+      slug: loaded.project.slug,
+      title: loaded.project.title,
+    },
+    source: {
+      configPath: loaded.configPath,
+      storyboardPath: loaded.inputs.storyboardPath,
+      briefPath: loaded.inputs.briefPath ?? null,
+      manifestPath: path.join(loaded.distDir, 'manifest.json'),
+    },
+    videoSpecPath: outputPath,
+    handoffPath,
+    videoSpec,
+    michibiki: {
+      optional: true,
+      path: michibikiPath,
+      engine,
+      command,
+      cwd: michibikiPath,
+      ran,
+      dryRun,
+      status,
+      stdout,
+      stderr,
+      note: runMichibiki
+        ? dryRun
+          ? 'Dry run only. Michibiki was not invoked.'
+          : 'Michibiki generate was invoked. Rendering still requires the Michibiki render step.'
+        : 'Michibiki was not invoked. Clone/setup Michibiki separately and run this command when needed.',
+    },
+  };
+
+  fs.writeFileSync(handoffPath, JSON.stringify(handoff, null, 2));
+
+  return handoff;
 };
 
 const writeSupportFiles = (

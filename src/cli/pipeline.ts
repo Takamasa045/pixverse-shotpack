@@ -2,10 +2,14 @@ import {
   buildPipelinePlan,
   describeConfigForCli,
   executePipeline,
+  exportMichibikiHandoff,
   formatDoctorMarkdown,
   formatPipelinePlanMarkdown,
   loadProjectConfig,
   runDoctor,
+  type MichibikiEngine,
+  type MichibikiLicenseMode,
+  type MichibikiOutputType,
   type PipelineCommand,
 } from '../pipeline/core';
 
@@ -20,6 +24,7 @@ const parseArgs = (argv: string[]): ParsedArgs => {
   if (
     commandRaw !== 'validate' &&
     commandRaw !== 'doctor' &&
+    commandRaw !== 'export' &&
     commandRaw !== 'plan' &&
     commandRaw !== 'run' &&
     commandRaw !== 'render'
@@ -64,6 +69,28 @@ const requiredOption = (options: Record<string, string | boolean>, key: string):
   return value;
 };
 
+const stringOption = (options: Record<string, string | boolean>, key: string) => {
+  const value = options[key];
+  return typeof value === 'string' ? value : undefined;
+};
+
+const oneOfOption = <T extends string>(
+  options: Record<string, string | boolean>,
+  key: string,
+  allowed: readonly T[],
+) => {
+  const value = stringOption(options, key);
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!allowed.includes(value as T)) {
+    throw new Error(`Invalid --${key}: ${value}. Expected one of: ${allowed.join(', ')}`);
+  }
+
+  return value as T;
+};
+
 const main = async () => {
   const parsed = parseArgs(process.argv.slice(2));
   const configPath =
@@ -90,6 +117,31 @@ const main = async () => {
   if (parsed.command === 'plan') {
     const plan = buildPipelinePlan(loaded);
     console.log(format === 'markdown' ? formatPipelinePlanMarkdown(plan) : JSON.stringify({ok: true, plan}, null, 2));
+    return;
+  }
+
+  if (parsed.command === 'export') {
+    const result = exportMichibikiHandoff(loaded, {
+      outputPath: stringOption(parsed.options, 'output'),
+      handoffPath: stringOption(parsed.options, 'handoff-output'),
+      engine: oneOfOption<MichibikiEngine>(parsed.options, 'engine', ['auto', 'editframe', 'hyperframes', 'remotion']),
+      outputType: oneOfOption<MichibikiOutputType>(
+        parsed.options,
+        'output-type',
+        ['code', 'mp4', 'preview', 'project', 'webm'],
+      ),
+      licenseMode: oneOfOption<MichibikiLicenseMode>(
+        parsed.options,
+        'license-mode',
+        ['client-work', 'commercial', 'oss', 'personal'],
+      ),
+      allowCloudRender: parsed.options['allow-cloud-render'] === true,
+      michibikiPath: stringOption(parsed.options, 'michibiki-path'),
+      runMichibiki: parsed.options['run-michibiki'] === true,
+      dryRun: parsed.options['dry-run'] === true,
+    });
+    console.log(format === 'videospec' ? JSON.stringify(result.videoSpec, null, 2) : JSON.stringify(result, null, 2));
+    process.exitCode = result.ok ? 0 : 1;
     return;
   }
 
