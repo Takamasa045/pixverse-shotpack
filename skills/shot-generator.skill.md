@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-承認済み `storyboard.yaml` を読み、PixVerse CLI でショット群を生成する。非同期ジョブ管理、クレジット確認、終了コード処理、部分 retry はここに集約する。既定値は `v6` だが、利用可能モデルは `references/model-constraints.md` を正とする。
+承認済み `storyboard.yaml` を読み、PixVerse CLI でショット群を生成する。非同期ジョブ管理、クレジット確認、終了コード処理、部分 retry はここに集約する。既定値は `v6` だが、利用可能モデルは `references/model-routing.md` で選定意図を確認し、`references/model-constraints.md` を正とする。
 
 ## Inputs / Outputs
 
@@ -10,7 +10,7 @@
 |------|------|
 | 入力 | Gate 1 承認済み `storyboard.yaml` |
 | 出力 | `dist/shot-*-primary.mp4`, `dist/ref-shot-*.webp`, optional `dist/audio/<slug>-voice.mp3`, `dist/run-log.md` |
-| 読む参照 | `references/exit-codes.md`, `references/credit-estimation.md`, `references/model-constraints.md` |
+| 読む参照 | `references/pixverse-best-practices.md`, `references/model-routing.md`, `references/exit-codes.md`, `references/credit-estimation.md`, `references/model-constraints.md` |
 | CLI | `auth`, `account info`, `create video`, `create image`, `create voice`, `task wait`, `asset download` |
 
 ## Core Rules
@@ -21,16 +21,20 @@
 4. 生成済み asset を消さない
 5. `run-log.md` に全 retry を残す
 6. `multi_shot: true` なら `--multi-shot` を付ける。対応外モデルで validation error が出たら、その shot だけ false にして再投入する
+7. visual prompt に narration / subtitle / title text が混ざっていたら Director に差し戻す
+8. video / image には `--idempotency-key`、voice には `--client-request-id` を使う
 
 ## Preflight
 
 ```bash
 pixverse auth status --json
 pixverse account info --json
+pixverse account slots --json
 ```
 
 - 残高不足なら `credit_insufficient`
 - 80% 超の予算なら `credit_warning`
+- slots が不足する場合は並列数を下げる
 
 ## T2V Flow
 
@@ -81,6 +85,16 @@ pixverse asset download "$AUDIO_ID" --dest dist/.downloads --json
 - exit `4`: 即停止
 - exit `5`: `prompt_negative` 補強で最大 2 回 retry
 - exit `6`: validation error。ログを書いて停止
+
+## QA / Regeneration
+
+`references/pixverse-best-practices.md` の QA と regeneration loop を適用する。
+
+- 失敗 dimension を1つ名付けてから retry する
+- story / offer の問題なら prompt や model ではなく Director に戻す
+- 良い clip だけ extend / upscale する
+- accepted still は保持し、I2V video job のみ先に retry する
+- generated text が出た場合は Remotion overlay に分離する
 
 ## Run Log Minimum Fields
 

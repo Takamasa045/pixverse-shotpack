@@ -1,0 +1,263 @@
+# Prompt Library
+
+このファイルは、Director が `brief.md` から `storyboard.yaml` の `shots[].prompt` を作るための参照ライブラリです。
+Shotpack では、プロンプトは最終映像の脚本ではなく、PixVerse に渡す shot 単位の制作指示として扱います。
+
+## Prompt Construction Rules
+
+1. 1 prompt = 1 shot = 1 visual job にする。
+2. 新しい場所、主役、動作、時間変化が必要なら別 shot に分ける。
+3. narration / subtitle / title text は visual prompt に入れない。ナレーションは `assets.voiceText`、テロップは Remotion 側で扱う。
+4. `workflow: i2v` では、静止画が見た目を決め、動画 prompt は motion / camera / timing を決める。
+5. 一貫性が必要な人物、商品、場所、小道具は、各 shot で同じ anchor wording を繰り返す。
+6. 画面内の文字生成を求めない。ロゴや読みやすい文字が必要なら、参照画像か Remotion overlay に分離する。
+
+Universal shape:
+
+```text
+[subject or reference binding].
+[one action with a clear start and end state].
+[environment and one secondary motion].
+[camera movement and framing].
+[lighting / realism / style boundary].
+```
+
+## Director Checklist
+
+storyboard を出す前に、各 shot で次を確認する。
+
+- subject: 主体が1つに絞られているか
+- action: 開始と終了が想像できる動作か
+- environment: 場所と質感が具体的か
+- camera: 1つの主要カメラワークに絞られているか
+- duration: prompt の動作量に合う秒数か
+- workflow: `t2v` か `i2v` か
+- model: `references/model-routing.md` の意図に合うか
+- audio: video native audio と top-level narration を混同していないか
+
+## T2V Shot Prompt
+
+用途:
+
+- 速度優先の social / promo / teaser
+- visual consistency より、短い展開と雰囲気を優先する
+- 参照画像なしで成立する shot
+
+Template:
+
+```text
+[Main subject] in [specific setting], [one visible action from start to finish].
+[Secondary motion in environment].
+[Camera move], [framing].
+[Lighting], [visual style], no readable text.
+```
+
+Example:
+
+```text
+A handcrafted ceramic cup on a rain-lit cafe table, steam slowly rising as a hand places a small note beside it.
+Soft reflections move across the window glass.
+Slow push in, close-up framing.
+Natural overcast light, cinematic realism, no readable text.
+```
+
+## I2V Reference Still Prompt
+
+用途:
+
+- `workflow: i2v`
+- `image_ref: "generate"` の reference still を作る
+- キャラ、商品、場所、世界観の一貫性を先に固定する
+
+Template:
+
+```text
+Reference still for [shot purpose].
+[Subject / product / character anchor] in [specific environment].
+Composition: [framing], [camera angle], [foreground/background].
+Lighting: [lighting].
+Style: [photoreal / stylized / anime / product film], no readable text.
+```
+
+Example:
+
+```text
+Reference still for a premium kitchen product reveal.
+A matte black camping kettle on a low wooden table beside a small controlled campfire.
+Composition: three-quarter product angle, kettle centered, warm fire in the background, shallow depth of field.
+Lighting: blue hour ambient light with soft fire highlights.
+Style: cinematic product film, no readable text.
+```
+
+## I2V Motion Prompt
+
+用途:
+
+- `pixverse create video --image <reference still>`
+- 静止画で見た目が決まっているため、動きとカメラを中心に書く
+
+Template:
+
+```text
+Animate the provided image: [subject] [small motion from start to end].
+[Environment secondary motion].
+[One camera movement], [pace].
+Preserve the subject design, composition, and lighting from the reference image.
+```
+
+Example:
+
+```text
+Animate the provided image: the kettle lid trembles subtly as steam grows from a thin line into a soft plume.
+Firelight flickers gently in the background.
+Slow push in, calm pace.
+Preserve the product shape, composition, and blue-hour lighting from the reference image.
+```
+
+## Product / Service Promo
+
+Prompt anchors:
+
+- product material and shape
+- use context
+- user action
+- benefit visible in frame
+- no readable text
+
+Template:
+
+```text
+[Product] in [real use context], [one user interaction].
+[Visible benefit as physical change].
+[Camera], [framing], [lighting], premium product film, no readable text.
+```
+
+## Character Or Host Shot
+
+Use `i2v` when identity matters across shots.
+
+Stable anchors:
+
+- age / silhouette / hairstyle
+- outfit and key color
+- prop or signature item
+- expression range
+- same character wording
+
+Template:
+
+```text
+The same character from the reference image, [short action], [expression].
+[Background motion].
+[Camera], [framing], [lighting].
+Preserve hairstyle, outfit, proportions, and key colors.
+```
+
+## Place / Atmosphere Shot
+
+Prompt anchors:
+
+- location type
+- time of day
+- weather / light
+- human scale or object scale
+- one environmental motion
+
+Template:
+
+```text
+[Specific place] at [time/weather], [one environmental change].
+[Human or object scale marker].
+[Camera], [framing], [lighting], cinematic realism.
+```
+
+## Social Hook Shot
+
+Use for the first 2-4 seconds of a short video.
+
+Template:
+
+```text
+[Unexpected visual contrast or immediate action].
+[Subject reacts or reveals one clue].
+Fast readable composition, [camera move], high clarity, no readable text.
+```
+
+Rules:
+
+- Do not explain the concept in text.
+- Show the visual reason to keep watching.
+- Keep the action legible on mobile.
+
+## Narration And Audio
+
+Visual prompts should not contain the narration script.
+
+Use:
+
+- `assets.voiceText`: top-level narration generated by `pixverse create voice`
+- `assets.voiceId`: optional confirmed PixVerse voice preset
+- `shots[].audio: true`: native audio from the video model, not narration
+- `bgm`: accepted local BGM asset
+
+Voice text should be natural spoken copy, not prompt prose:
+
+```text
+夜明け前の森で、小さな灯りが道を作ります。
+一歩ずつ、景色が変わっていく。
+```
+
+## Negative Prompt Baseline
+
+`meta.prompt_negative` should include at least:
+
+```text
+blurry, distorted faces, watermark, unreadable text, extra fingers, broken hands
+```
+
+Add only failure-specific negatives after QA. Do not overload the negative prompt before the first run.
+
+## Regeneration Prompt Loop
+
+When a shot fails:
+
+1. Name the failed visual criterion.
+2. Keep the accepted parts unchanged.
+3. Remove instructions that did not affect the shot.
+4. Add one stronger constraint for the failed criterion.
+5. Regenerate only the failed shot.
+6. Change model or workflow only when the failure is structural.
+
+Examples:
+
+| Failure | Prompt response |
+|---|---|
+| character drift | repeat identity anchors, reduce action, switch to `i2v` if still T2V |
+| product deformation | add material, rigidity, attachment points, and close framing |
+| motion unclear | simplify to one action, shorten camera move |
+| scene too busy | remove background events and use a tighter frame |
+| generated text appears | add `no readable text`; move copy to Remotion |
+
+## Camera Vocabulary
+
+Use one primary camera move per shot.
+
+| Intent | Camera wording |
+|---|---|
+| reveal | slow push in, dolly in, rack focus |
+| scale | pull back, crane up, wide establishing shot |
+| follow action | tracking follow, lateral tracking |
+| inspection | static close-up, macro close-up, slow orbit |
+| tension | handheld subtle, Dutch angle drift |
+| calm | locked-off wide, static medium shot |
+
+## Shot Role Templates
+
+| Role | Prompt goal |
+|---|---|
+| establish | show the world and viewing context |
+| detail | show material, texture, clue, or product feature |
+| hero | show the main subject at maximum clarity |
+| action | show one complete movement or interaction |
+| transition | bridge mood or location without adding new story |
+| closing | leave a final image that can hold for narration or logo overlay |

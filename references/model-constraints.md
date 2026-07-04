@@ -2,6 +2,8 @@
 
 Director と Shot Generator が共有する制約表。PixVerse CLI の Supported Models と PixVerse Platform docs を優先し、CLI validation がこの表と矛盾する場合は CLI を正とする。
 
+モデルを選ぶ理由と workflow routing は `references/model-routing.md` を正とする。このファイルは duration / quality / aspect ratio / mode support の制約表に限定する。
+
 ## Source Snapshot
 
 - CLI: `pixverse@1.2.x`

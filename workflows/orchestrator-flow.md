@@ -1,6 +1,7 @@
 # Workflow: Orchestrator Flow
 
 Orchestrator は creative も CLI 実行も担当しない。開始フェーズの決定、Gate 提示、state 管理だけを行う。
+creative 判断の参照は `references/prompt-library.md` と `references/model-routing.md`、CLI運用の参照は `references/pixverse-best-practices.md` を使う。
 
 ## Responsibilities
 
@@ -38,6 +39,7 @@ director
 
 - storyboard 全体
 - workflow
+- prompt pattern / model routing の要約
 - 推定クレジット
 - post_process の有無
 - 合計尺と `meta.target_duration_seconds` の比較

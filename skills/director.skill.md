@@ -4,7 +4,7 @@
 
 creative brief から、制作可能な `storyboard.yaml` を生成する。creative 判断はここに集約し、PixVerse CLI は実行しない。
 
-既定値は `v6`。ただし `pixverse-c1`、`happyhorse-1.0`、`seedance-*`、`kling-*` など CLI 対応モデルは `references/model-constraints.md` の範囲内で選んでよい。
+既定値は `v6`。ただし `pixverse-c1`、`happyhorse-1.0`、`seedance-*`、`kling-*` など CLI 対応モデルは `references/model-routing.md` で意図を決め、`references/model-constraints.md` の範囲内で選んでよい。
 
 ## Inputs / Outputs
 
@@ -12,7 +12,7 @@ creative brief から、制作可能な `storyboard.yaml` を生成する。crea
 |------|------|
 | 入力 | `brief.md`、任意の参照画像 |
 | 出力 | `storyboard.yaml` |
-| 読む参照 | `references/model-constraints.md`, `references/credit-estimation.md` |
+| 読む参照 | `references/prompt-library.md`, `references/model-routing.md`, `references/model-constraints.md`, `references/credit-estimation.md` |
 | 禁止 | PixVerse CLI 実行、manifest 構築、ファイル rename |
 
 ## Required Output Schema
@@ -63,6 +63,20 @@ shots:
 6. Midjourney パラメータを混ぜない
 7. `notes` には制作意図だけを書き、CLI 手順は書かない
 8. `multi_shot` は 1 clip 内の内部カメラ遷移が必要なときだけ true
+9. prompt は `references/prompt-library.md` の shot 単位テンプレートから作る。1 prompt に複数 scene change を詰め込まない
+10. narration、字幕、タイトル、CTA 文言は visual prompt に入れない。必要なら `assets.voiceText` または Remotion overlay に分離する
+
+## Prompt Design
+
+prompt は次の順で作る。
+
+1. brief の目的、視聴者、尺、tone を抽出する
+2. shot ごとの役割を決める
+3. `references/prompt-library.md` から `T2V`, `I2V Reference Still`, `I2V Motion`, `Product / Service Promo`, `Character Or Host Shot` などの型を選ぶ
+4. subject / action / environment / camera / lighting を1つずつ埋める
+5. `prompt_negative` は baseline から始め、失敗理由が出てから補強する
+
+各 `shots[].prompt` は visual instruction だけにする。話す内容、歌詞、字幕、ロゴ文言は入れない。
 
 ## Duration Design
 
@@ -100,17 +114,20 @@ duration を既定値で一律に埋めない。全 shot を同じ秒数（例: 
 
 モデル選択の優先順:
 
-- `v6`: camera control / character continuity / native audio / multi-shot を活かしたい
-- `pixverse-c1`: reference / character continuity を優先したい
-- `happyhorse-1.0`: stylized / motion-heavy shot を試したい
-- `seedance-*` / `kling-*` / `sora-*` / `veo-*`: 明示的な作風上の理由があるとき
-- `v5.6`: legacy fallback や motion control を優先したい
+- `v6`: 既定。social / promo / explainer / product shot の第一候補
+- `pixverse-c1`: physical contact、action、transformation、continuity failure が明確なときの候補
+- `seedance-*`: higher-quality reference / transition / mixed-reference 検証が必要なとき
+- `kling-*` / `sora-*` / `veo-*` / `happyhorse-1.0`: ユーザー指定、比較 run、または作風上の理由があるとき
+- `grok-imagine`: fast ideation を優先するとき
+- `v5.6`: legacy fallback や motion-control prep を優先したいとき
 
 `i2v` を選ぶ条件:
 
 - ブランド映像や product film で一貫性が重要
 - Gate 1 で静止画レビューを入れたい
 - brief に workflow 指定がある
+
+モデル選択理由は Gate 1 要約で説明できる粒度にする。単に「高品質だから」ではなく、「商品形状維持」「action continuity」「fixed duration」「fast ideation」のように失敗時に検証可能な理由を書く。
 
 ## I2V Addendum
 
@@ -127,6 +144,8 @@ Orchestrator に渡す要約:
 - workflow
 - shot 数
 - 各 shot の `id`, `model`, `duration`, `multi_shot`, `post_process`
+- model 選定理由
+- prompt pattern の選定理由
 - 合計尺と `meta.target_duration_seconds` の比較
 - 尺配分の意図（どの shot をなぜ長く / 短くしたか）
 - 推定クレジット
@@ -142,3 +161,5 @@ Orchestrator に渡す要約:
 - [ ] `workflow: i2v` なら `image_generation` がある
 - [ ] post_process は必要な shot だけ設定されている
 - [ ] `multi_shot: true` は内部カメラ遷移が必要な shot だけ
+- [ ] prompt が visual instruction に限定され、ナレーション・字幕・タイトルを混ぜていない
+- [ ] model 選定理由が `references/model-routing.md` と矛盾していない

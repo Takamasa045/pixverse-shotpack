@@ -1,12 +1,14 @@
 # Workflow: Image-First I2V Shot Generator
 
-`meta.workflow: "i2v"` の storyboard を受け取り、参照画像の生成または読込を行ったうえで PixVerse I2V を実行する runbook。Orchestrator から Gate 1 承認後に呼ばれる前提。既定モデルは `v6`、利用可能モデルと制約は `references/model-constraints.md` を正とする。
+`meta.workflow: "i2v"` の storyboard を受け取り、参照画像の生成または読込を行ったうえで PixVerse I2V を実行する runbook。Orchestrator から Gate 1 承認後に呼ばれる前提。既定モデルは `v6`、モデル選定は `references/model-routing.md`、利用可能モデルと制約は `references/model-constraints.md` を正とする。
 
 ## Inputs
 
 - `storyboard.yaml`
 - 任意のローカル参照画像
 - `dist/pipeline-state.json` があれば resume 情報
+- `references/prompt-library.md` の I2V reference still / motion prompt ルール
+- `references/pixverse-best-practices.md` の I2V QA ルール
 
 ## Outputs
 

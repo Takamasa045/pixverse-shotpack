@@ -147,6 +147,8 @@ Shotpack は「コマンド集」ではなく、エージェントに自然言�
 | Michibiki に渡す | 「この Shotpack project を Michibiki 用の VideoSpec に export して、Editframe project を作れる状態にして」 |
 | Michibiki 側で編集を続ける | 「Shotpack から Michibiki handoff を実行して、編集 project と preview まで作って。cloud render は使わないで」 |
 
+エージェントが絵コンテや実行計画を作るときは、[`references/prompt-library.md`](./references/prompt-library.md)、[`references/model-routing.md`](./references/model-routing.md)、[`references/pixverse-best-practices.md`](./references/pixverse-best-practices.md) を参照します。これにより、prompt pattern、model 選定理由、PixVerse CLI の制作ルールを揃えてから `storyboard.yaml` や dry-run に進めます。
+
 ## Michibiki 連携（オプション）
 
 Shotpack は、制作内容を Michibiki が扱いやすい `VideoSpec` に書き出せます。これはオプション連携です。Michibiki はこのリポジトリに同梱されず、Git submodule でもありません。
@@ -250,7 +252,7 @@ Michibiki 側で生成される編集 project、preview、render 成果物は、
 | `dist/manifest.json` | 生成物の一覧表（Remotion が読む） |
 | `skills/` | 各スタッフ（サブエージェント）の役割定義 |
 | `workflows/` | 制作フローの手順書 |
-| `references/` | AI モデルの制約・コスト・エラーコードなどの参考資料 |
+| `references/` | プロンプト型、モデル選定、制作ベストプラクティス、AI モデルの制約・コスト・エラーコードなどの参考資料 |
 | `src/` | Remotion の映像テンプレート |
 
 ## 完成物
@@ -293,5 +295,8 @@ dry-run は PixVerse を呼ばず、`dist/dry-run-plan.json`、`dist/dry-run.md`
 
 1. [project.yaml](./project.yaml) - 設定ファイルの実物
 2. [SKILL.md](./SKILL.md) - エージェントの詳細仕様
-3. [workflows/orchestrator-flow.md](./workflows/orchestrator-flow.md) - 進行管理の詳細
-4. [brief.md](./brief.md) / [storyboard.yaml](./storyboard.yaml) - 企画書と絵コンテの実物
+3. [references/prompt-library.md](./references/prompt-library.md) - プロンプト型と文例
+4. [references/model-routing.md](./references/model-routing.md) - workflow と model の選び方
+5. [references/pixverse-best-practices.md](./references/pixverse-best-practices.md) - PixVerse CLI 制作ルール
+6. [workflows/orchestrator-flow.md](./workflows/orchestrator-flow.md) - 進行管理の詳細
+7. [brief.md](./brief.md) / [storyboard.yaml](./storyboard.yaml) - 企画書と絵コンテの実物

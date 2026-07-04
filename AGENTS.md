@@ -21,6 +21,9 @@ PixVerse CLI → Remotion のパイプラインで `dist/manifest.json` と最�
 | PixVerse voice narration | `assets.voiceText` / `assets.voiceId` in `project.yaml` |
 | manifest 構築 | `skills/assembler.skill.md` |
 | 料理ショート再現・横縦展開 | `skills/campfire-cooking-video.skill.md` |
+| prompt pattern / prompt library | `references/prompt-library.md` |
+| model routing / workflow selection | `references/model-routing.md` |
+| PixVerse CLI production best practices | `references/pixverse-best-practices.md` |
 | manifest schema | `references/manifest-schema.md` |
 | exit code / retry 契約 | `references/exit-codes.md` |
 | クレジット見積もり（実測校正済み） | `references/credit-estimation.md` |
@@ -58,11 +61,14 @@ PixVerse CLI → Remotion のパイプラインで `dist/manifest.json` と最�
 10. duration は shot ごとに物語上の役割から決める。**全カットを一律尺（例: 全部 5 秒 / 6 秒）で割らない。** 均一割りは禁止。
 11. 全 shot 一律 duration は、brief が明示要求し `meta.allow_uniform_duration: true` と `meta.uniform_duration_reason` がある場合だけ許す。
 12. **一貫性が要る作品（同一キャラ・背景・小道具が複数 shot に跨る）は image-first で作る。** まず画像生成で design bible を固める: アンカー（世界 / キャラ / 場所）→ キャラ3面図・建物・小道具シート → 各 shot のキーフレーム（design bible を `--images` で参照）→ i2v（`--image`、必要なら `--audio`）。shot 間の一貫性を t2v の運任せにしない。詳細は `workflows/image-first-i2v-pipeline.md`。
+13. prompt は `references/prompt-library.md` の shot 単位テンプレートから作る。ナレーション、字幕、タイトル文言は visual prompt に混ぜない。
+14. モデル選定は `references/model-routing.md` で意図を決め、duration / quality / aspect ratio の許容値は `references/model-constraints.md` で確認する。
 
 ## Codex / 非 Claude エージェント向けの注意
 
 - **ツール対応**: Claude の `Bash` → Codex の shell、`Read` → ファイル読み、`Write`/`Edit` → `apply_patch`。`SKILL.md` / `skills/*.skill.md` 冒頭の YAML frontmatter（`name` / `allowed-tools` 等）は Claude 専用なので無視し、markdown 本文を契約として読む。
 - **PixVerse CLI**: `pixverse create video|image|voice … --json`。video / image 生成には `--idempotency-key <slug-shot-NN>` を付ける（fetch-failed 再試行での二重課金をバックエンドが重複排除する）。`create voice` は CLI 1.2 の `--client-request-id <slug-voice>` を付ける。`--audio` は video 側のネイティブ音声、`assets.voiceText` は `create voice` で top-level `audio.src` を作る。i2v は `create video --image <keyframe>`、複数参照画像は `create image --images a.png b.png`。固定 duration モデル（`sora-2`=4/8/12、`veo-3.1`=4/6/8）は許容値へ丸める。
+- **制作判断**: Director は `references/prompt-library.md` と `references/model-routing.md` を読み、Shot Generator は `references/pixverse-best-practices.md` を読んでから Gate 1 / dry-run / generation を扱う。
 - **shell は zsh**: 未クォートの `$var` は単語分割されない（フラグは配列 `("${arr[@]}")` か `${=var}` で渡す）。`status` は read-only 特殊変数なので変数名に使わない。
 - **クレジットは並行セッションでドリフトする**: 残高差分ではなく各タスクの `cost_credits` を正とする。
 - **生成映像にテキストを焼かない**: テロップ・タイトルは Remotion（`src/`）側のみ。consumer 契約（`dist/manifest.json`）は変更しない。

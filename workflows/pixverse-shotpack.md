@@ -1,6 +1,6 @@
 # Workflow: PixVerse Shot Generator (T2V)
 
-`meta.workflow: "t2v"` の storyboard を受け取り、PixVerse CLI で primary pass のショット群を生成するための runbook。Orchestrator から Gate 1 承認後に呼ばれる前提。既定モデルは `v6`、利用可能モデルと制約は `references/model-constraints.md` を正とする。
+`meta.workflow: "t2v"` の storyboard を受け取り、PixVerse CLI で primary pass のショット群を生成するための runbook。Orchestrator から Gate 1 承認後に呼ばれる前提。既定モデルは `v6`、モデル選定は `references/model-routing.md`、利用可能モデルと制約は `references/model-constraints.md` を正とする。
 
 ## Inputs
 
@@ -19,6 +19,8 @@
 2. `meta.workflow` は `t2v`
 3. すべての CLI コマンドに `--json` を付ける
 4. credit 見積もりは `references/credit-estimation.md` を使う
+5. prompt は `references/prompt-library.md` の T2V ルールに沿っている
+6. CLI 実行は `references/pixverse-best-practices.md` の batch / retry / QA ルールに沿っている
 
 ## Step 1: Preflight
 

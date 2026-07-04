@@ -136,6 +136,8 @@ Michibiki outputs live under `../michibiki/outputs/jobs/<job-id>/`, not inside S
 | `t2v` | Speed matters most | Generate clips directly from text prompts |
 | `i2v` | Visual consistency matters most | Generate reference images first, then animate them |
 
+Prompt patterns, model routing, and PixVerse production rules are tracked in [`references/prompt-library.md`](./references/prompt-library.md), [`references/model-routing.md`](./references/model-routing.md), and [`references/pixverse-best-practices.md`](./references/pixverse-best-practices.md). Agents should use those files before creating `storyboard.yaml` or running PixVerse.
+
 ### Supported Model Baseline
 
 As of 2026-07-04, this repo targets PixVerse CLI `1.2.x` behavior, including `create voice` for standalone narration assets.
@@ -164,7 +166,7 @@ See [`references/model-constraints.md`](./references/model-constraints.md) for t
 | `dist/renders/*.mp4` | Final rendered videos |
 | `skills/` | Sub-agent role definitions |
 | `workflows/` | Phase runbooks |
-| `references/` | Model limits, credit estimates, error contracts |
+| `references/` | Prompt patterns, model routing, production best practices, model limits, credit estimates, error contracts |
 | `src/` | Remotion compositions |
 
 ### Manual Commands
@@ -189,8 +191,11 @@ Dry runs do not call PixVerse. If `assets.voiceText` is set, the dry-run manifes
 
 1. [`project.yaml`](./project.yaml)
 2. [`SKILL.md`](./SKILL.md)
-3. [`workflows/orchestrator-flow.md`](./workflows/orchestrator-flow.md)
-4. [`brief.md`](./brief.md) / [`storyboard.yaml`](./storyboard.yaml)
+3. [`references/prompt-library.md`](./references/prompt-library.md)
+4. [`references/model-routing.md`](./references/model-routing.md)
+5. [`references/pixverse-best-practices.md`](./references/pixverse-best-practices.md)
+6. [`workflows/orchestrator-flow.md`](./workflows/orchestrator-flow.md)
+7. [`brief.md`](./brief.md) / [`storyboard.yaml`](./storyboard.yaml)
 
 <a id="ja"></a>
 ## 日本語
@@ -322,6 +327,8 @@ Michibiki の出力は Shotpack 内ではなく `../michibiki/outputs/jobs/<job-
 | `t2v` | 速さ重視 | テキストプロンプトから直接クリップを作る |
 | `i2v` | 見た目の一貫性重視 | 参照画像を先に作り、それを動画化する |
 
+プロンプトの型、モデル選定、PixVerse CLI の制作ルールは [`references/prompt-library.md`](./references/prompt-library.md)、[`references/model-routing.md`](./references/model-routing.md)、[`references/pixverse-best-practices.md`](./references/pixverse-best-practices.md) にまとめています。エージェントは `storyboard.yaml` 作成や PixVerse 実行前にこれらを参照します。
+
 ### 対応モデルの目安
 
 2026-07-04 時点では PixVerse CLI `1.2.x` の挙動を基準にし、ナレーションは `create voice` で別音声 asset として扱います。
@@ -349,7 +356,7 @@ Michibiki の出力は Shotpack 内ではなく `../michibiki/outputs/jobs/<job-
 | `dist/renders/*.mp4` | 最終 render 動画 |
 | `skills/` | サブエージェントの役割定義 |
 | `workflows/` | 各フェーズの runbook |
-| `references/` | モデル制約、クレジット見積もり、エラー契約 |
+| `references/` | プロンプト型、モデル選定、制作ベストプラクティス、モデル制約、クレジット見積もり、エラー契約 |
 | `src/` | Remotion composition |
 
 ### 手動コマンド
@@ -374,8 +381,11 @@ dry-run は PixVerse を呼びません。`export` は素材生成をせず Mich
 
 1. [`project.yaml`](./project.yaml)
 2. [`SKILL.md`](./SKILL.md)
-3. [`workflows/orchestrator-flow.md`](./workflows/orchestrator-flow.md)
-4. [`brief.md`](./brief.md) / [`storyboard.yaml`](./storyboard.yaml)
+3. [`references/prompt-library.md`](./references/prompt-library.md)
+4. [`references/model-routing.md`](./references/model-routing.md)
+5. [`references/pixverse-best-practices.md`](./references/pixverse-best-practices.md)
+6. [`workflows/orchestrator-flow.md`](./workflows/orchestrator-flow.md)
+7. [`brief.md`](./brief.md) / [`storyboard.yaml`](./storyboard.yaml)
 
 <a id="zh"></a>
 ## 中文
