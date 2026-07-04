@@ -1,6 +1,6 @@
 # Credit Estimation Reference
 
-Gate 1 の判断に使う見積もり表。CLI / model list は 2026-05-28 時点の `pixverse@1.1.10` と PixVerse Platform docs に合わせる。価格はモデル追加より変わりやすいため、CLI 実行前の `pixverse account info --json` と実行後の `credits-report.json` を必ず正にする。
+Gate 1 の判断に使う見積もり表。CLI / model list は 2026-07-04 時点の PixVerse CLI `1.2.x` と PixVerse Platform docs に合わせる。価格はモデル追加より変わりやすいため、CLI 実行前の `pixverse account info --json` と実行後の `credits-report.json` を必ず正にする。
 
 ## Planning Baseline
 
@@ -32,6 +32,7 @@ Gate 1 の判断に使う見積もり表。CLI / model list は 2026-05-28 時�
 | post-processing | `extend` | `v6` | 元の quality / audio 条件の `per-second` 課金 |
 | post-processing | `sound` | sound effect | `2 cr / sec` |
 | post-processing | `speech` | lip sync | `4 cr / sec` |
+| narration | `create voice` | `assets.voiceText` | provisional until measured |
 | post-processing | `upscale` | 1 asset | official public table not yet published |
 
 ## Estimation Formula
@@ -56,6 +57,7 @@ image_estimate = generated_reference_count * provisional_image_rate
 
 ```text
 post_estimate = extend + upscale + sound + speech
+voice_estimate = unknown until measured
 ```
 
 ### display budget
@@ -79,6 +81,7 @@ warning_threshold = account_balance * 0.8
 - V6 pricing: PixVerse Platform `Model & Pricing`
 - V5.6 pricing: 同ページ
 - sound / lip sync pricing: 同ページ
+- voice generation pricing: 実測優先
 - image generation / third-party model pricing: public table が薄いものは実測優先
 
 ## Calibration Rule

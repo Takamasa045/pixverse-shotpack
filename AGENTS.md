@@ -18,6 +18,7 @@ PixVerse CLI → Remotion のパイプラインで `dist/manifest.json` と最�
 | creative 判断・Duration Design | `skills/director.skill.md` |
 | PixVerse CLI 実行 | `skills/shot-generator.skill.md` |
 | 後処理（extend/upscale/sound/speech） | `skills/post-processor.skill.md` |
+| PixVerse voice narration | `assets.voiceText` / `assets.voiceId` in `project.yaml` |
 | manifest 構築 | `skills/assembler.skill.md` |
 | 料理ショート再現・横縦展開 | `skills/campfire-cooking-video.skill.md` |
 | manifest schema | `references/manifest-schema.md` |
@@ -61,7 +62,7 @@ PixVerse CLI → Remotion のパイプラインで `dist/manifest.json` と最�
 ## Codex / 非 Claude エージェント向けの注意
 
 - **ツール対応**: Claude の `Bash` → Codex の shell、`Read` → ファイル読み、`Write`/`Edit` → `apply_patch`。`SKILL.md` / `skills/*.skill.md` 冒頭の YAML frontmatter（`name` / `allowed-tools` 等）は Claude 専用なので無視し、markdown 本文を契約として読む。
-- **PixVerse CLI**: `pixverse create video|image … --json`。生成ごとに `--idempotency-key <slug-shot-NN>` を必ず付ける（fetch-failed 再試行での二重課金をバックエンドが重複排除する）。`--audio` でネイティブ音声 ON（C1 / V6 / Veo 系）。i2v は `create video --image <keyframe>`、複数参照画像は `create image --images a.png b.png`。固定 duration モデル（`sora-2`=4/8/12、`veo-3.1`=4/6/8）は許容値へ丸める。
+- **PixVerse CLI**: `pixverse create video|image|voice … --json`。video / image 生成には `--idempotency-key <slug-shot-NN>` を付ける（fetch-failed 再試行での二重課金をバックエンドが重複排除する）。`create voice` は CLI 1.2 の `--client-request-id <slug-voice>` を付ける。`--audio` は video 側のネイティブ音声、`assets.voiceText` は `create voice` で top-level `audio.src` を作る。i2v は `create video --image <keyframe>`、複数参照画像は `create image --images a.png b.png`。固定 duration モデル（`sora-2`=4/8/12、`veo-3.1`=4/6/8）は許容値へ丸める。
 - **shell は zsh**: 未クォートの `$var` は単語分割されない（フラグは配列 `("${arr[@]}")` か `${=var}` で渡す）。`status` は read-only 特殊変数なので変数名に使わない。
 - **クレジットは並行セッションでドリフトする**: 残高差分ではなく各タスクの `cost_credits` を正とする。
 - **生成映像にテキストを焼かない**: テロップ・タイトルは Remotion（`src/`）側のみ。consumer 契約（`dist/manifest.json`）は変更しない。

@@ -18,7 +18,7 @@
 1. primary asset を storyboard 順で `scene-01.mp4`, `scene-02.mp4` に揃える
 2. `9:16` side output は `dist/vertical/` に残し、manifest へ入れない
 3. duration は実ファイル長から計算する
-4. placeholder audio を必ず `dist/audio/shotpack-placeholder.wav` に置く
+4. `assets.voiceText` がなければ placeholder / local audio を `dist/audio/` に置く。`assets.voiceText` がある場合は `dist/audio/<slug>-voice.mp3` を使う
 5. `credits-report.json` は `run-log.md` 実績から集計する
 
 ## Manifest Policy
@@ -39,5 +39,5 @@
 
 - [ ] `scene-*` が storyboard 順に揃っている
 - [ ] manifest の frame 合計が一致する
-- [ ] audio placeholder が存在する
+- [ ] manifest の `audio.src` が存在する
 - [ ] `credits-report.json` が parse できる

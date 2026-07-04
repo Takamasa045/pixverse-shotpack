@@ -97,6 +97,8 @@ type ShotpackManifest = {
 | `durationInSeconds` | 全 scene の実秒数合計 |
 | `bpm` | `90` |
 
+`assets.voiceText` を使う場合、`src` は `audio/<project-slug>-voice.mp3` になる。manifest shape は変えず、Remotion consumer は従来どおり top-level `audio.src` を再生する。
+
 ### deliverables
 
 manifest に含めるのは primary `16:9` のみ。

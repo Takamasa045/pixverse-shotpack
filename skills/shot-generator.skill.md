@@ -9,9 +9,9 @@
 | 項目 | 内容 |
 |------|------|
 | 入力 | Gate 1 承認済み `storyboard.yaml` |
-| 出力 | `dist/shot-*-primary.mp4`, `dist/ref-shot-*.webp`, `dist/run-log.md` |
+| 出力 | `dist/shot-*-primary.mp4`, `dist/ref-shot-*.webp`, optional `dist/audio/<slug>-voice.mp3`, `dist/run-log.md` |
 | 読む参照 | `references/exit-codes.md`, `references/credit-estimation.md`, `references/model-constraints.md` |
-| CLI | `auth`, `account info`, `create video`, `create image`, `task wait`, `asset download` |
+| CLI | `auth`, `account info`, `create video`, `create image`, `create voice`, `task wait`, `asset download` |
 
 ## Core Rules
 
@@ -46,8 +46,23 @@ pixverse account info --json
 pixverse create video \
   --model "$MODEL" \
   $( [ "$AUDIO" = "true" ] && echo "--audio" ) \
+  --idempotency-key "$PROJECT_SLUG-$SHOT_ID" \
   $( [ "$MULTI_SHOT" = "true" ] && echo "--multi-shot" ) \
   --json
+```
+
+## Voice Flow
+
+`project.yaml` の `assets.voiceText` は shot の `audio: true` とは別に扱う。CLI 1.2 以降では `create speech` ではなく、全体ナレーション用の voice asset を作る。
+
+```bash
+pixverse create voice \
+  --text "$VOICE_TEXT" \
+  --client-request-id "$PROJECT_SLUG-voice" \
+  --no-wait \
+  --json
+pixverse task wait "$AUDIO_ID" --type audio --json
+pixverse asset download "$AUDIO_ID" --dest dist/.downloads --json
 ```
 
 ## I2V Flow

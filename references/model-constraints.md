@@ -4,9 +4,9 @@ Director と Shot Generator が共有する制約表。PixVerse CLI の Supporte
 
 ## Source Snapshot
 
-- CLI: `pixverse@1.1.10`
+- CLI: `pixverse@1.2.x`
 - Source: PixVerse CLI README / PixVerse Platform docs
-- Updated: 2026-05-28
+- Updated: 2026-07-04
 
 ## Video Models
 
@@ -59,7 +59,8 @@ Director と Shot Generator が共有する制約表。PixVerse CLI の Supporte
 5. PixVerse 生成では `meta.target_duration_seconds` を必須にし、全 shot 一律 duration は validation error とする。例外は `meta.allow_uniform_duration: true` と `meta.uniform_duration_reason` がある場合のみ。
 6. primary pass の標準は `16:9`。`9:16` などを primary にする場合は render 設定と manifest consumer を合わせる。
 7. `multi_shot` は opt-in。対応外モデルで CLI が warning / validation error を返した場合は、その shot だけ `multi_shot: false` にして再投入する。
-8. `audio` は opt-in。対応外モデルで CLI が warning / validation error を返した場合は、その shot だけ `audio: false` にして再投入する。
+8. `audio` は video job 側のネイティブ音声として opt-in。対応外モデルで CLI が warning / validation error を返した場合は、その shot だけ `audio: false` にして再投入する。
+9. top-level narration は `assets.voiceText` から `pixverse create voice --text` で作り、`dist/audio/<slug>-voice.mp3` を manifest の `audio.src` に入れる。これは `audio: true` とは別物。
 
 ## Post-Process Chain
 
@@ -69,4 +70,4 @@ Director と Shot Generator が共有する制約表。PixVerse CLI の Supporte
 extend -> upscale -> sound -> speech
 ```
 
-この順序を変えない。
+この順序を変えない。`create voice` は post-process chain ではなく、全体ナレーション音声の生成 step として扱う。

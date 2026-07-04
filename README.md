@@ -138,7 +138,7 @@ Michibiki outputs live under `../michibiki/outputs/jobs/<job-id>/`, not inside S
 
 ### Supported Model Baseline
 
-As of 2026-05-28, this repo targets `pixverse@1.1.10` and current PixVerse C1 / V6 platform docs.
+As of 2026-07-04, this repo targets PixVerse CLI `1.2.x` behavior, including `create voice` for standalone narration assets.
 
 | Model | Use it for | Notes |
 |-------|------------|-------|
@@ -146,6 +146,7 @@ As of 2026-05-28, this repo targets `pixverse@1.1.10` and current PixVerse C1 / 
 | `pixverse-c1` | Cinematic, action, reference-heavy generation | 1-15s, up to 1080p. API name `c1` is normalized to `pixverse-c1` |
 | `seedance-2.0-standard` | Higher-quality third-party generation | Validation supports up to `1080p` |
 | `veo-3.1-standard` / `veo-3.1-fast` | Veo comparison runs | Validation supports up to `2160p` |
+| `create voice` | Top-level narration audio | Set `assets.voiceText` and optional `assets.voiceId`; dry-run reports one voice job |
 
 See [`references/model-constraints.md`](./references/model-constraints.md) for the full table.
 
@@ -182,7 +183,7 @@ npm run start
 npm run render:shotpack
 ```
 
-Dry runs do not call PixVerse. `export` writes Michibiki handoff files without generating assets.
+Dry runs do not call PixVerse. If `assets.voiceText` is set, the dry-run manifest reserves `audio/<slug>-voice.mp3` and the plan reports one voice job. `export` writes Michibiki handoff files without generating assets.
 
 ### Learn More
 
@@ -323,7 +324,7 @@ Michibiki の出力は Shotpack 内ではなく `../michibiki/outputs/jobs/<job-
 
 ### 対応モデルの目安
 
-2026-05-28 時点では `pixverse@1.1.10` と PixVerse C1 / V6 の docs を基準にしています。
+2026-07-04 時点では PixVerse CLI `1.2.x` の挙動を基準にし、ナレーションは `create voice` で別音声 asset として扱います。
 
 | モデル | 使いどころ | 備考 |
 |--------|------------|------|

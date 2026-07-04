@@ -50,6 +50,8 @@ const ProjectConfigSchema = z.object({
     mode: z.enum(['local', 'pixverse']).default('local'),
     sourceDir: z.string().default('./public/shotpack-sample'),
     audio: z.string().default('audio/shotpack-placeholder.wav'),
+    voiceText: z.string().optional(),
+    voiceId: z.string().optional(),
     videoPattern: z.string().default('scene-%02d.mp4'),
     stillPattern: z.string().default('ref-shot-%02d.webp'),
     copyStills: z.boolean().default(true),
@@ -367,6 +369,7 @@ type RunSummary = {
   failed: number;
   generatedImages: number;
   generatedVideos: number;
+  generatedVoices: number;
   stagedVideos: number;
   creditsConsumed: number;
   finalRender: string | null;
@@ -380,6 +383,7 @@ type CreditBreakdown = {
     upscale: number;
     sound: number;
     speech: number;
+    voice: number;
   };
 };
 
@@ -422,12 +426,14 @@ type PipelinePlan = {
     durationInFrames: number;
     imageJobs: number;
     videoJobs: number;
+    voiceJobs: number;
   };
   creditEstimate: {
     totalCredits: number | null;
     videoCredits: number;
     imageCredits: number;
     postProcessingCredits: number;
+    voiceCredits: number | null;
     warnings: string[];
     perShot: Array<{
       shotId: string;
@@ -795,6 +801,25 @@ const normalizeVideoModelId = (model: string) => {
   return model.toLowerCase() === 'c1' ? 'pixverse-c1' : model;
 };
 
+const hasVoiceGeneration = (loaded: LoadedProjectConfig) => {
+  return typeof loaded.assets.voiceText === 'string' && loaded.assets.voiceText.trim().length > 0;
+};
+
+const plannedAudioRelative = (loaded: LoadedProjectConfig) => {
+  if (hasVoiceGeneration(loaded)) {
+    return path.join('audio', `${loaded.project.slug}-voice.mp3`);
+  }
+
+  return path.join('audio', path.basename(resolveFrom(loaded.configDir, path.join(loaded.assets.sourceDir, loaded.assets.audio))));
+};
+
+const stageExistingAudio = (loaded: LoadedProjectConfig) => {
+  const sourceAudio = resolveFrom(loaded.configDir, path.join(loaded.assets.sourceDir, loaded.assets.audio));
+  const audioRelative = path.join('audio', path.basename(sourceAudio));
+  copyFile(sourceAudio, path.join(loaded.distDir, audioRelative));
+  return audioRelative;
+};
+
 const buildNormalizedShots = (
   config: ProjectConfigInput,
   storyboard: StoryboardInput,
@@ -978,6 +1003,10 @@ const validateConfig = (loaded: LoadedProjectConfig): ValidationResult => {
     }
   }
 
+  if (loaded.assets.mode === 'local' && hasVoiceGeneration(loaded)) {
+    errors.push('assets.voiceText uses PixVerse create voice; set assets.mode: pixverse or provide a local assets.audio file instead.');
+  }
+
   if (loaded.assets.mode === 'pixverse' && loaded.generation.workflow === 'i2v' && !loaded.generation.image.enabled) {
     warnings.push('I2V workflow is enabled but generation.image.enabled is false; local image_ref paths are required.');
   }
@@ -999,6 +1028,7 @@ const validateConfig = (loaded: LoadedProjectConfig): ValidationResult => {
 
 const buildPixverseCommandsForShot = (loaded: LoadedProjectConfig, shot: NormalizedShot) => {
   const commands: string[] = [];
+  const idempotencyKey = `${loaded.project.slug}-${shot.sourceId}`;
 
   if (loaded.assets.mode === 'pixverse' && loaded.generation.workflow === 'i2v') {
     if (shot.imageRef === 'generate' || shot.imageRef === null) {
@@ -1012,6 +1042,8 @@ const buildPixverseCommandsForShot = (loaded: LoadedProjectConfig, shot: Normali
         loaded.storyboard.image_generation?.quality ?? loaded.generation.image.quality,
         '--aspect-ratio',
         loaded.storyboard.image_generation?.aspect_ratio ?? loaded.generation.image.aspectRatio,
+        '--idempotency-key',
+        `${idempotencyKey}-image`,
       ];
       const detailLevel = loaded.storyboard.image_generation?.detail_level ?? loaded.generation.image.detailLevel;
 
@@ -1037,6 +1069,8 @@ const buildPixverseCommandsForShot = (loaded: LoadedProjectConfig, shot: Normali
       shot.quality,
       '--aspect-ratio',
       shot.aspectRatio,
+      '--idempotency-key',
+      idempotencyKey,
     ];
 
     if (loaded.generation.workflow === 'i2v') {
@@ -1061,6 +1095,30 @@ const buildPixverseCommandsForShot = (loaded: LoadedProjectConfig, shot: Normali
   }
 
   return commands;
+};
+
+const buildPixverseVoiceCommands = (loaded: LoadedProjectConfig) => {
+  if (loaded.assets.mode !== 'pixverse' || !hasVoiceGeneration(loaded)) {
+    return [];
+  }
+
+  const args = [
+    'pixverse create voice',
+    '--text',
+    quote(loaded.assets.voiceText?.trim() ?? ''),
+  ];
+
+  if (loaded.assets.voiceId) {
+    args.push('--voice-id', loaded.assets.voiceId);
+  }
+
+  args.push('--client-request-id', `${loaded.project.slug}-voice`, '--no-wait', '--json');
+
+  return [
+    args.join(' '),
+    'pixverse task wait <audio-id> --type audio --json',
+    `pixverse asset download <audio-id> --dest ${quote(path.join(loaded.distDir, '.downloads'))} --json`,
+  ];
 };
 
 export const describeConfigForCli = (loaded: LoadedProjectConfig) => {
@@ -1143,7 +1201,7 @@ const estimateVideoCreditsForShot = (shot: NormalizedShot) => {
   };
 };
 
-const buildCreditEstimate = (loaded: LoadedProjectConfig, imageJobs: number) => {
+const buildCreditEstimate = (loaded: LoadedProjectConfig, imageJobs: number, voiceJobs: number) => {
   const imageCredits = imageJobs;
   const warnings: string[] = [];
   let videoCredits = 0;
@@ -1183,11 +1241,17 @@ const buildCreditEstimate = (loaded: LoadedProjectConfig, imageJobs: number) => 
     warnings.push('Image generation credits are provisional at 1 credit per generated reference image.');
   }
 
+  if (voiceJobs > 0) {
+    hasUnknown = true;
+    warnings.push('PixVerse voice generation credits are measured from account balance; no local voice credit table is bundled.');
+  }
+
   return {
     totalCredits: hasUnknown ? null : videoCredits + imageCredits,
     videoCredits,
     imageCredits,
     postProcessingCredits: 0,
+    voiceCredits: voiceJobs > 0 ? null : 0,
     warnings: Array.from(new Set(warnings)),
     perShot,
   };
@@ -1200,9 +1264,13 @@ export const buildPipelinePlan = (loaded: LoadedProjectConfig): PipelinePlan => 
     ? loaded.normalizedShots.filter((shot) => shot.imageRef === 'generate' || shot.imageRef === null).length
     : 0;
   const videoJobs = loaded.assets.mode === 'pixverse' ? loaded.normalizedShots.length : 0;
+  const voiceJobs = loaded.assets.mode === 'pixverse' && hasVoiceGeneration(loaded) ? 1 : 0;
   const validation = validateConfig(loaded);
-  const commands = loaded.normalizedShots.flatMap((shot) => buildPixverseCommandsForShot(loaded, shot));
-  const creditEstimate = buildCreditEstimate(loaded, imageJobs);
+  const commands = [
+    ...loaded.normalizedShots.flatMap((shot) => buildPixverseCommandsForShot(loaded, shot)),
+    ...buildPixverseVoiceCommands(loaded),
+  ];
+  const creditEstimate = buildCreditEstimate(loaded, imageJobs, voiceJobs);
 
   commands.push(
     `node ${quote(path.relative(loaded.configDir, path.resolve(loaded.configDir, 'scripts/prepare-public-assets.mjs')))}`,
@@ -1225,6 +1293,7 @@ export const buildPipelinePlan = (loaded: LoadedProjectConfig): PipelinePlan => 
       durationInFrames,
       imageJobs,
       videoJobs,
+      voiceJobs,
     },
     creditEstimate,
     files: {
@@ -1275,6 +1344,7 @@ export const formatPipelinePlanMarkdown = (plan: PipelinePlan) => {
     `- Validation: ${plan.validation.ok ? 'ok' : 'needs fixes'}`,
     `- Image jobs: ${plan.totals.imageJobs}`,
     `- Video jobs: ${plan.totals.videoJobs}`,
+    `- Voice jobs: ${plan.totals.voiceJobs}`,
     `- Render output: ${plan.files.renderOutputPath}`,
     '',
     '## Shots',
@@ -1495,6 +1565,7 @@ const createEmptyCreditReport = (
         upscale: 0,
         sound: 0,
         speech: 0,
+        voice: 0,
       },
     },
     perShot: loaded.normalizedShots.map((shot) => ({
@@ -1549,6 +1620,10 @@ const readExistingCreditReport = (loaded: LoadedProjectConfig): CreditReportData
           typeof ((parsed.breakdown as Record<string, unknown> | undefined)?.post_processing as Record<string, unknown> | undefined)?.speech === 'number'
             ? ((((parsed.breakdown as Record<string, unknown>).post_processing as Record<string, unknown>).speech) as number)
             : 0,
+        voice:
+          typeof ((parsed.breakdown as Record<string, unknown> | undefined)?.post_processing as Record<string, unknown> | undefined)?.voice === 'number'
+            ? ((((parsed.breakdown as Record<string, unknown>).post_processing as Record<string, unknown>).voice) as number)
+            : 0,
       },
     },
     perShot: perShotRaw.map((entry) => {
@@ -1570,7 +1645,6 @@ const readExistingCreditReport = (loaded: LoadedProjectConfig): CreditReportData
 };
 
 const stageLocalAssets = (loaded: LoadedProjectConfig): StagedAssets => {
-  const sourceDir = resolveFrom(loaded.configDir, loaded.assets.sourceDir);
   const stagedStills = new Map<string, string[]>();
 
   ensureDir(loaded.distDir);
@@ -1593,12 +1667,8 @@ const stageLocalAssets = (loaded: LoadedProjectConfig): StagedAssets => {
     }
   }
 
-  const sourceAudio = path.join(sourceDir, loaded.assets.audio);
-  const audioRelative = path.join('audio', path.basename(sourceAudio));
-  copyFile(sourceAudio, path.join(loaded.distDir, audioRelative));
-
   return {
-    audioRelative,
+    audioRelative: stageExistingAudio(loaded),
     stagedStills,
     creditReport: createEmptyCreditReport(loaded),
   };
@@ -1629,6 +1699,40 @@ const downloadPixverseAsset = (
   }
 
   return file;
+};
+
+const stagePixverseVoiceAudio = (
+  loaded: LoadedProjectConfig,
+  creditReport: CreditReportData,
+  downloadsDir: string,
+) => {
+  const text = loaded.assets.voiceText?.trim();
+  if (!text) {
+    return stageExistingAudio(loaded);
+  }
+
+  const voiceCreditsBefore = getPixverseCreditsTotal(loaded.configDir);
+  const createArgs = ['create', 'voice', '--text', text];
+
+  if (loaded.assets.voiceId) {
+    createArgs.push('--voice-id', loaded.assets.voiceId);
+  }
+
+  createArgs.push('--client-request-id', `${loaded.project.slug}-voice`, '--no-wait', '--json');
+
+  const voicePayload = jsonCommand('pixverse', createArgs, loaded.configDir);
+  const voiceId = pickId(voicePayload, ['audio_id', 'asset_id', 'task_id', 'id']);
+  jsonCommand('pixverse', ['task', 'wait', voiceId, '--type', 'audio', '--json'], loaded.configDir);
+
+  const downloadedAudio = downloadPixverseAsset(loaded.configDir, voiceId, downloadsDir);
+  const audioRelative = plannedAudioRelative(loaded);
+  copyFile(downloadedAudio, path.join(loaded.distDir, audioRelative));
+
+  const voiceCreditsAfter = getPixverseCreditsTotal(loaded.configDir);
+  const voiceCreditsSpent = Math.max(0, voiceCreditsBefore - voiceCreditsAfter);
+  creditReport.breakdown.postProcessing.voice += voiceCreditsSpent;
+
+  return audioRelative;
 };
 
 const extractCreditsTotal = (payload: Record<string, unknown>) => {
@@ -1698,6 +1802,8 @@ const stagePixverseAssets = (loaded: LoadedProjectConfig): StagedAssets => {
           loaded.storyboard.image_generation?.quality ?? loaded.generation.image.quality,
           '--aspect-ratio',
           loaded.storyboard.image_generation?.aspect_ratio ?? loaded.generation.image.aspectRatio,
+          '--idempotency-key',
+          `${loaded.project.slug}-${shot.sourceId}-image`,
         ];
         const detailLevel = loaded.storyboard.image_generation?.detail_level ?? loaded.generation.image.detailLevel;
 
@@ -1747,6 +1853,8 @@ const stagePixverseAssets = (loaded: LoadedProjectConfig): StagedAssets => {
       shot.quality,
       '--aspect-ratio',
       shot.aspectRatio,
+      '--idempotency-key',
+      `${loaded.project.slug}-${shot.sourceId}`,
     ];
 
     if (referenceImagePath) {
@@ -1782,12 +1890,7 @@ const stagePixverseAssets = (loaded: LoadedProjectConfig): StagedAssets => {
     copyFile(downloadedVideo, distVideoPathForShot(loaded, shot));
   }
 
-  const sampleAudio = resolveFrom(
-    loaded.configDir,
-    path.join(loaded.assets.sourceDir, loaded.assets.audio),
-  );
-  const audioRelative = path.join('audio', path.basename(sampleAudio));
-  copyFile(sampleAudio, path.join(loaded.distDir, audioRelative));
+  const audioRelative = stagePixverseVoiceAudio(loaded, creditReport, downloadsDir);
   creditReport.accountBalanceAfter = getPixverseCreditsTotal(loaded.configDir);
   creditReport.totalCreditsConsumed = Math.max(
     0,
@@ -1975,14 +2078,13 @@ const buildMichibikiVideoSpec = (
     return normalized.id;
   };
 
-  const sourceDir = resolveFrom(loaded.configDir, loaded.assets.sourceDir);
-  const sourceAudio = path.join(sourceDir, loaded.assets.audio);
-  const distAudio = path.join(loaded.distDir, 'audio', path.basename(sourceAudio));
+  const sourceAudio = resolveFrom(loaded.configDir, path.join(loaded.assets.sourceDir, loaded.assets.audio));
+  const distAudio = path.join(loaded.distDir, plannedAudioRelative(loaded));
   addAsset({
     id: 'music-track',
     type: 'audio',
-    source: fs.existsSync(distAudio) ? distAudio : sourceAudio,
-    usage: 'music',
+    source: hasVoiceGeneration(loaded) ? distAudio : fs.existsSync(distAudio) ? distAudio : sourceAudio,
+    usage: hasVoiceGeneration(loaded) ? 'voice' : 'music',
   });
 
   const manifestPath = path.join(loaded.distDir, 'manifest.json');
@@ -2260,6 +2362,7 @@ const writeSupportFiles = (
             upscale: creditReport.breakdown.postProcessing.upscale,
             sound: creditReport.breakdown.postProcessing.sound,
             speech: creditReport.breakdown.postProcessing.speech,
+            voice: creditReport.breakdown.postProcessing.voice,
           },
         },
         per_shot: creditReport.perShot.map((shot) => ({
@@ -2332,10 +2435,7 @@ const writeDryRunFiles = (
 ) => {
   ensureDir(loaded.distDir);
 
-  const audioRelative = path.join(
-    'audio',
-    path.basename(resolveFrom(loaded.configDir, path.join(loaded.assets.sourceDir, loaded.assets.audio))),
-  );
+  const audioRelative = plannedAudioRelative(loaded);
   const manifest = buildManifest(
     loaded,
     audioRelative,
@@ -2401,6 +2501,7 @@ export const executePipeline = async (
         failed: 0,
         generatedImages: plan.totals.imageJobs,
         generatedVideos: plan.totals.videoJobs,
+        generatedVoices: plan.totals.voiceJobs,
         stagedVideos: loaded.assets.mode === 'local' ? plan.totals.sceneCount : 0,
         creditsConsumed: 0,
         finalRender: null,
@@ -2413,10 +2514,7 @@ export const executePipeline = async (
   const staged =
     options.mode === 'render' && loaded.assets.mode === 'pixverse'
       ? {
-          audioRelative: path.join(
-            'audio',
-            path.basename(resolveFrom(loaded.configDir, path.join(loaded.assets.sourceDir, loaded.assets.audio))),
-          ),
+          audioRelative: plannedAudioRelative(loaded),
           stagedStills: new Map<string, string[]>(
             loaded.normalizedShots.map((shot) => {
               const matches = fs
@@ -2439,6 +2537,7 @@ export const executePipeline = async (
       ? plan.totals.imageJobs
       : 0,
     generatedVideos: loaded.assets.mode === 'pixverse' ? plan.totals.videoJobs : 0,
+    generatedVoices: loaded.assets.mode === 'pixverse' ? plan.totals.voiceJobs : 0,
     stagedVideos: loaded.assets.mode === 'local' ? plan.totals.sceneCount : 0,
     creditsConsumed:
       options.mode === 'render'
@@ -2446,9 +2545,10 @@ export const executePipeline = async (
         : staged.creditReport.totalCreditsConsumed,
     finalRender: null,
   };
-  const manifestPath = writeSupportFiles(loaded, manifest, options, pipelineId, summary, staged.creditReport);
+  let manifestPath = writeSupportFiles(loaded, manifest, options, pipelineId, summary, staged.creditReport);
   renderShotpack(loaded);
   summary.finalRender = loaded.renderOutputPath;
+  manifestPath = writeSupportFiles(loaded, manifest, options, pipelineId, summary, staged.creditReport);
 
   return {
     plan,

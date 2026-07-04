@@ -227,7 +227,7 @@ Michibiki 側で生成される編集 project、preview、render 成果物は、
 
 ## 対応モデルの目安
 
-2026-05-28 時点では `pixverse@1.1.10` と PixVerse 公式 docs の C1 / V6 を基準にしています。
+2026-07-04 時点では PixVerse CLI `1.2.x` の挙動を基準にしています。ナレーション音声は legacy `create speech` ではなく、`create voice` で別音声 asset として作ります。
 
 | モデル | 使いどころ | 備考 |
 |--------|------------|------|
@@ -235,6 +235,7 @@ Michibiki 側で生成される編集 project、preview、render 成果物は、
 | `pixverse-c1` | cinematic / action / reference 重視 | 1-15 秒、最大 1080p。公式 API 名 `c1` は CLI 用に `pixverse-c1` へ正規化 |
 | `seedance-2.0-standard` | 高品質な third-party 生成 | `1080p` まで validation 対応 |
 | `veo-3.1-standard` / `veo-3.1-fast` | Veo 系の比較候補 | `2160p` まで validation 対応 |
+| `create voice` | 全体ナレーション音声 | `project.yaml` の `assets.voiceText` と任意の `assets.voiceId` を使う。dry-run では voice job 数だけ確認できる |
 
 完全な制約表は [references/model-constraints.md](./references/model-constraints.md) を見てください。
 
@@ -285,7 +286,7 @@ npm run start              # プレビュー画面を開く
 npm run render:shotpack    # MP4 を書き出す
 ```
 
-dry-run は PixVerse を呼ばず、`dist/dry-run-plan.json`、`dist/dry-run.md`、`dist/dry-run-manifest.json` を出力します。
+dry-run は PixVerse を呼ばず、`dist/dry-run-plan.json`、`dist/dry-run.md`、`dist/dry-run-manifest.json` を出力します。`assets.voiceText` がある場合は、`audio/<slug>-voice.mp3` を予約し、plan に voice job を表示します。
 `export` は PixVerse を呼ばず、既存の絵コンテと見つかった素材から `dist/video-spec.json` と `dist/michibiki-handoff.json` を出力します。
 
 ## もっと詳しく知りたい場合

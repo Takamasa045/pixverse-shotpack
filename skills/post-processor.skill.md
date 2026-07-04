@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-生成済み asset に対して後処理を適用する。新規ショット生成は行わず、既存動画に対する `extend`, `upscale`, `sound`, `speech` だけを担当する。
+生成済み asset に対して後処理を適用する。新規ショット生成は行わず、既存動画に対する `extend`, `upscale`, `sound`, `speech` だけを担当する。CLI 1.2 の `create voice` は top-level narration 生成であり、この後処理 chain には含めない。
 
 ## Inputs / Outputs
 
@@ -11,7 +11,7 @@
 | 入力 | `dist/shot-*-primary.mp4`, `storyboard.yaml` |
 | 出力 | 更新後の `dist/shot-*-primary.mp4`, `dist/raw/*`, `dist/run-log.md` |
 | 読む参照 | `references/exit-codes.md` |
-| CLI | `create extend`, `create upscale`, `create sound`, `create speech`, `task wait`, `asset download` |
+| CLI | `create extend`, `create upscale`, `create sound`, legacy `create speech`, `task wait`, `asset download` |
 
 ## Skip Rules
 
