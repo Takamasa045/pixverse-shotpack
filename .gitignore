@@ -5,7 +5,11 @@ run-log.md
 credits-report.json
 *.zip
 _submission/
-node_modules/
+node_modules
+.production/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
 out/
 .remotion/
 public/yokai-cipher/
