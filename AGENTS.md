@@ -1,83 +1,32 @@
-# AGENTS.md — pixverse-shotpack (Codex / OpenAI-agent entry point)
+# Agent entry point
 
-このリポジトリは、自然言語の映像依頼を `project.yaml` / `brief.md` / `storyboard.yaml` に正規化し、
-PixVerse CLI → Remotion のパイプラインで `dist/manifest.json` と最終 MP4 まで組み立てる。
+The current operating contract is [`SKILL.md`](SKILL.md), with [`references/production-v1.md`](references/production-v1.md) for commands and migration. Read `production-core/docs/CONTRACT.md` before runtime changes and the nearest test before changing an adapter.
 
-**正本は `SKILL.md`（Claude Code の skill 形式で書かれたオーケストレータ契約）。**
-この `AGENTS.md` は同じ契約を Codex / OpenAI 系エージェントが follow できるよう橋渡しするミラー。
-**まず `SKILL.md` を読む。曖昧な点は SKILL.md と各 `skills/*.skill.md` を正とする。**
+## Current architecture
 
-## Read-first map
+- Character Pipeline owns adopted revisions of identity/body, outfit, voice, world/place and props. Shotpack owns sequence, take adoption, timeline, issues and delivery.
+- Shared code is canonical in Shotpack's `production-core/` and vendored identically into Character Pipeline. Do not create another generation/budget/resume engine. Synchronize the vendored copy and verify hashes when changing the core.
+- New work uses JSON `production.v1` and root `./bin/production`, Node >=22.18 with built-in SQLite and no new npm dependencies. The previous YAML/Remotion entry is legacy opt-in only. Archived `references/legacy-*.md` and older role/workflow files do not override current contracts.
+- Use one production coordinator and one backend owner for each intent. The two entries must use the same explicit `--db` path when handling one production. Do not run old and new paid workflows concurrently.
 
-| 目的 | ファイル |
-|------|---------|
-| オーケストレータ契約（正本） | `SKILL.md` |
-| オーケストレータ runbook | `workflows/orchestrator-flow.md` |
-| T2V ショット生成 | `workflows/pixverse-shotpack.md` |
-| Image-first / I2V（一貫性重視） | `workflows/image-first-i2v-pipeline.md` |
-| creative 判断・Duration Design | `skills/director.skill.md` |
-| PixVerse CLI 実行 | `skills/shot-generator.skill.md` |
-| 後処理（extend/upscale/sound/speech） | `skills/post-processor.skill.md` |
-| PixVerse voice narration | `assets.voiceText` / `assets.voiceId` in `project.yaml` |
-| manifest 構築 | `skills/assembler.skill.md` |
-| 料理ショート再現・横縦展開 | `skills/campfire-cooking-video.skill.md` |
-| prompt pattern / prompt library | `references/prompt-library.md` |
-| model routing / workflow selection | `references/model-routing.md` |
-| PixVerse CLI production best practices | `references/pixverse-best-practices.md` |
-| manifest schema | `references/manifest-schema.md` |
-| exit code / retry 契約 | `references/exit-codes.md` |
-| クレジット見積もり（実測校正済み） | `references/credit-estimation.md` |
-| モデル制約 | `references/model-constraints.md` |
+## Before editing or executing
 
-## Runtime entry（必ず `project.yaml` を入口にする）
+1. Read `git status --short`, preserve existing user changes, and check free storage before copying assets or installing anything. Do not remove files/caches to gain space.
+2. Make a concise plan and choose the smallest meaningful local checks. Validation, plan and `run --dry-run` make no provider generation calls. Offline core use does not require npm installation or authentication changes.
+3. Paid work needs the human's concrete approved target, retry limit and upper credits, recorded against the resolved plan. Unknown cost/context/capability blocks generation. `approve` records existing human permission; it never authorizes work by itself. Honor valid scope without unnecessary repeat prompts.
+4. Never verify code or documents by spending credits unless the human approved that trial. Do not create OAuth grants, expand permissions, publish, push, merge or distribute packages unless explicitly requested.
 
-1. `./bin/pipeline doctor   --config ./project.yaml`
-2. `./bin/pipeline validate --config ./project.yaml`
-3. `./bin/pipeline plan     --config ./project.yaml --format markdown`
-4. `./bin/pipeline run      --config ./project.yaml --dry-run`
-5. `./bin/pipeline run      --config ./project.yaml`
-6. 必要なら `./bin/pipeline render --config ./project.yaml`
+## Runtime invariants
 
-`assets.mode` は `local`（既存 asset を staged copy）か `pixverse`（CLI 生成）のどちらか。
-複数の `project.*.yaml` がある場合は `--config ./project.<slug>.yaml` で対象を選ぶ。
+- Immutable adopted entity revisions; retain provenance, hashes and region/workspace. Keep provider IDs as strings and times as integer milliseconds.
+- Intent hashes reflect every resolved request input and intentional attempt. Same shot ID is not a cache key for changed content. Explicit `false` must reach the provider as off.
+- Reserve costs and persist submitting state before network submission. Keep partial IDs on nonzero exits; reconcile uncertain submission instead of resubmitting. Download failure never becomes a new generation request. Voice/music trace IDs do not imply deduplication.
+- Separate completion, download, QA and acceptance. Preserve rejected takes and adoption history. Scope invalidation to affected dependencies; stale does not authorize regeneration.
+- Read current Canvas graph/capabilities; validate scoped changes, merge base/local/remote and preserve human choices, layout, unmanaged nodes and large IDs. Report conflicts. Do not send undeclared fields or secretly fail over to Create.
+- Return real adopted, checked files and report unresolved costs/QA. Never represent a dry-run path or missing manifest asset as a finished MP4. TTS overlaid on video is narration, not proven lip sync.
 
-## Gates（人間の承認で止まる）
+## Contributor checks and reporting
 
-- **Gate 1 storyboard approval**: ショット一覧 / workflow / 推定クレジット / shot ごとの model・duration・multi_shot・post_process / 合計尺と `meta.target_duration_seconds` の比較 を提示。`approve` / `revise` / `abort`。
-- **Gate 1.5 reference-still approval**（`meta.workflow: i2v` かつ `image_ref: "generate"` のとき）: `approve` / `retry` / `abort`。
-- **Gate 2 shot quality approval**: `dist/` の primary output 一覧 / run-log 要点 / 実績クレジット を提示。`approve_all` / `retry_specific` / `abort`。
+Test changes with neutral fixtures and fault cases relevant to the edit: resume/duplicate submission, concurrent budget reservation, explicit OFF, QA failure, missing files, Canvas conflict and context mismatch. Mock success is contract evidence only. Run supported existing local finishing tests without fetching new production assets.
 
-## Non-Negotiable Rules（正本は SKILL.md。要約）
-
-1. すべての PixVerse CLI コマンドに `--json` を付ける。
-2. `dist/manifest.json` は `RenderManifest` 互換を維持する。
-3. manifest に含めるのは primary pass の `16:9` だけ（`9:16` 等を primary にする場合は render 設定と consumer を合わせる）。
-4. partial failure でも `dist/` の成果物を消さない。
-5. retry 契約は `references/exit-codes.md` を正とする。
-6. モデル制約は `references/model-constraints.md` を正とする。
-7. クレジットは `references/credit-estimation.md` を基準にしつつ、CLI 実行の前後で `pixverse account info --json` を必ず実測して照合する。
-8. `run-log.md` と `credits-report.json` は Assembler 完了前に揃える。
-9. `multi_shot` は opt-in。1 scene = 1 file を崩さない。
-10. duration は shot ごとに物語上の役割から決める。**全カットを一律尺（例: 全部 5 秒 / 6 秒）で割らない。** 均一割りは禁止。
-11. 全 shot 一律 duration は、brief が明示要求し `meta.allow_uniform_duration: true` と `meta.uniform_duration_reason` がある場合だけ許す。
-12. **一貫性が要る作品（同一キャラ・背景・小道具が複数 shot に跨る）は image-first で作る。** まず画像生成で design bible を固める: アンカー（世界 / キャラ / 場所）→ キャラ3面図・建物・小道具シート → 各 shot のキーフレーム（design bible を `--images` で参照）→ i2v（`--image`、必要なら `--audio`）。shot 間の一貫性を t2v の運任せにしない。詳細は `workflows/image-first-i2v-pipeline.md`。
-13. prompt は `references/prompt-library.md` の shot 単位テンプレートから作る。ナレーション、字幕、タイトル文言は visual prompt に混ぜない。
-14. モデル選定は `references/model-routing.md` で意図を決め、duration / quality / aspect ratio の許容値は `references/model-constraints.md` で確認する。
-
-## Codex / 非 Claude エージェント向けの注意
-
-- **ツール対応**: Claude の `Bash` → Codex の shell、`Read` → ファイル読み、`Write`/`Edit` → `apply_patch`。`SKILL.md` / `skills/*.skill.md` 冒頭の YAML frontmatter（`name` / `allowed-tools` 等）は Claude 専用なので無視し、markdown 本文を契約として読む。
-- **PixVerse CLI**: `pixverse create video|image|voice … --json`。video / image 生成には `--idempotency-key <slug-shot-NN>` を付ける（fetch-failed 再試行での二重課金をバックエンドが重複排除する）。`create voice` は CLI 1.2 の `--client-request-id <slug-voice>` を付ける。`--audio` は video 側のネイティブ音声、`assets.voiceText` は `create voice` で top-level `audio.src` を作る。i2v は `create video --image <keyframe>`、複数参照画像は `create image --images a.png b.png`。固定 duration モデル（`sora-2`=4/8/12、`veo-3.1`=4/6/8）は許容値へ丸める。
-- **制作判断**: Director は `references/prompt-library.md` と `references/model-routing.md` を読み、Shot Generator は `references/pixverse-best-practices.md` を読んでから Gate 1 / dry-run / generation を扱う。
-- **shell は zsh**: 未クォートの `$var` は単語分割されない（フラグは配列 `("${arr[@]}")` か `${=var}` で渡す）。`status` は read-only 特殊変数なので変数名に使わない。
-- **クレジットは並行セッションでドリフトする**: 残高差分ではなく各タスクの `cost_credits` を正とする。
-- **生成映像にテキストを焼かない**: テロップ・タイトルは Remotion（`src/`）側のみ。consumer 契約（`dist/manifest.json`）は変更しない。
-
-## 最小ワークフロー（Codex から1本作る場合）
-
-1. 依頼を `brief.<slug>.md` / `storyboard.<slug>.yaml` / `project.<slug>.yaml` に正規化（既存の `*.jhorror-observation` / `*.yamamba-oide` を雛形にする）。
-2. `validate` → `run --dry-run` でコマンドと推定クレジットを確認（消費ゼロ）→ Gate 1。
-3. 一貫性が要るなら Rule 12 の image-first（design bible → keyframe → i2v）。
-4. 生成 → 実測クレジット記録 → Gate 2。
-5. `src/<slug>/` に Remotion composition を実装し `src/Root.tsx` に登録 → `npx remotion render src/index.ts <CompId> <out>.mp4`。
-6. 最終 MP4 を必ず目視 QC（尺・カット順・音・テロップ・黒フレーム）。
+Report changed files, checks/results, real deliverables, unchanged authorization boundaries, unverified provider/creative behavior and remaining blockers. Record durable operating lessons publicly in generalized form; keep tokens, account state, private paths/media and raw production logs out of tracked files. Do not change unrelated work.

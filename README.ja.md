@@ -1,302 +1,49 @@
 # PixVerse Shotpack
 
-## Languages / 言語
+企画や既存映像から、意図のあるショット、必要な箇所の修正、検品した編集納品へ進める。
 
-多言語切替は [README.md](./README.md) 内に統合しました。
+[English](README.md) · [スキル入口](SKILL.md) · [利用ガイド](references/production-v1.md)
 
-[English](./README.md#en) | [日本語](./README.md#ja) | [中文](./README.md#zh) | [Español](./README.md#es) | [Français](./README.md#fr) | [Deutsch](./README.md#de)
+## 2つの入口と共通基盤
 
-**AI に「こんな動画を作って」と伝えるだけで、企画から完成 MP4 まで自動で進む動画制作パイプラインです。**
+Character Pipelineは人物・体格・衣装・声・世界・小道具の採用版を管理します。Shotpackは企画、ショット、take採用、編集、納品を担当します。両方が共通の `production.v1` 契約と実行台帳を使い、Characterから作品を渡した後の進行役はShotpackに一本化します。
 
-## これは何？
+共通コードの正本はShotpackの `production-core/`、Character側は同一内容を同梱します。隣のリポジトリや追加サービスは不要です。新規制作の入口はルートの `./bin/production` です。
 
-PixVerse Shotpack は、自然言語（ふつうの日本語）でやりたいことを伝えると、AI エージェントが以下を自動でやってくれるテンプレートです。
+## 自然な言葉で依頼
 
-1. あなたの依頼を「企画書」に整理する
-2. 企画書をもとに「絵コンテ」を作る
-3. AI（PixVerse）で動画素材を生成する
-4. 素材を組み合わせて 1 本の MP4 動画に仕上げる
+- 「いつものキャラで20秒の案内。顔と声は同じ、服だけ冬服に」
+- 「この猫が駅で友人を見つける短編。先に構成と費用を見せて」
+- 「7〜10秒の手だけ直して。他の採用カットは使って」
+- 「提供動画に字幕を付けて納品。新しい生成は不要」
 
-手動でコマンドを打つ必要はありません。エージェントに話しかけるだけで進みます。
+制作カード、場面の意図、参照の役割、未解決条件、dry-runを示して進めます。有料処理は対象・試行上限・費用上限を具体化して承認を記録します。既存の承認範囲内で毎回許可を取り直す必要はありません。
 
-## できること / できないこと
+## 費用ゼロで開始
 
-このリポジトリは Shotpack 本体です。`git clone` しただけで、外部サービスや別リポジトリまで自動で入るわけではありません。
-
-| やりたいこと | 必要なもの |
-|-------------|------------|
-| 設定チェック / dry-run | このリポジトリ + `npm install` |
-| PixVerse で素材生成 | PixVerse CLI、ログイン、生成クレジット |
-| Remotion で MP4 書き出し | このリポジトリの npm 依存 |
-| Michibiki / HyperFrames へ引き渡し | 別途 Michibiki を clone / setup |
-
-つまり、Shotpack だけを clone した状態では、PixVerse の生成や Michibiki / HyperFrames 側の動画生成までは完結しません。
-
-## サブエージェントの構造
-
-このパイプラインは、1 人の「監督」と 4 人の「専門スタッフ」で動きます。各ステップの間には、あなたが内容を確認して OK / やり直しを出せる「チェックポイント（Gate）」があります。
-
-```
-あなたの依頼（自然言語）
-  |
-  v
-+--------------------------------------------------+
-|  Orchestrator（監督）                              |
-|  - 全体の進行管理                                  |
-|  - チェックポイントであなたに確認を取る              |
-|  - 途中で止まっても再開できる                       |
-+--------------------------------------------------+
-  |
-  v
-+--------------------------------------------------+
-|  Director（演出家）                                |
-|  - 依頼内容から「絵コンテ」を作成                   |
-|  - カット割り・構図・尺を決める                     |
-|  - AI への指示文（プロンプト）を設計                 |
-+--------------------------------------------------+
-  |
-  v  [ Gate 1: 絵コンテ確認 ]
-  |    OK / やり直し / 中止
-  v
-+--------------------------------------------------+
-|  Shot Generator（撮影担当）                        |
-|  - PixVerse AI で動画クリップを生成                 |
-|  - 失敗したカットだけ自動リトライ                   |
-|  - クレジット（生成コスト）を管理                   |
-+--------------------------------------------------+
-  |
-  v  [ Gate 1.5: 参照画像確認 ]  ※ i2v モードのみ
-  |
-  v  [ Gate 2: 生成結果確認 ]
-  |    OK / 特定カットだけやり直し / 中止
-  v
-+--------------------------------------------------+
-|  Post-Processor（仕上げ担当）                      |
-|  - 尺の延長（extend）                              |
-|  - 高解像度化（upscale）                           |
-|  - 効果音・ナレーション付与                         |
-+--------------------------------------------------+
-  |
-  v
-+--------------------------------------------------+
-|  Assembler（編集・納品担当）                        |
-|  - 素材を正しい順番に並べる                         |
-|  - Remotion が読める形式に変換                      |
-|  - コスト報告書・ログを出力                         |
-+--------------------------------------------------+
-  |
-  v
-+--------------------------------------------------+
-|  Remotion（映像レンダラー）                         |
-|  - 最終的な 1 本の MP4 を書き出す                   |
-+--------------------------------------------------+
-  |
-  v
-  完成 MP4
-```
-
-## 始め方
-
-### 1. リポジトリを取得する
+**Node >=22.18** を使います。新基盤の検証・計画・fixture試験・dry-runにはnpm依存追加、ログイン、隣のrepoが要りません。
 
 ```bash
-git clone https://github.com/Takamasa045/pixverse-shotpack.git
-cd pixverse-shotpack
+./bin/production validate production-core/fixtures/station-story.json
+./bin/production plan production-core/fixtures/station-story.json
+./bin/production run production-core/fixtures/station-story.json --dry-run
+node --test production-core/test/*.test.mjs
 ```
 
-### 2. 依存パッケージをインストールする
+生成前にテンポを確認するには、`rough-plan production.json --font /path/to/existing-font.ttf --out previews` で無音の文章カードを並べます。既存FFmpeg/Pillowを使う計画用MP4で、完成品の採用とは別です。
 
-```bash
-npm install
-```
+同梱fixtureは計画専用です。生成前に採用参照、実際のcontext、capability snapshot、価格根拠が必要です。Canvasの採用素材は、選択historyを取得前後に確認し、容量制限付きHTTPSで保存できます。
 
-### 3. PixVerse CLI にログインする
+人物登録、承認後の実行、再開、仕上げ、移行、代表3例は[利用ガイド](references/production-v1.md)、正確な項目は[データ契約](production-core/docs/CONTRACT.md)を参照します。同じ作品を両入口で扱う時は明示的に同じ `--db` パスを指定します。
 
-PixVerse CLI は別途インストールが必要です。
+## 検証と品質の境界
 
-```bash
-npm install -g pixverse@latest
-pixverse auth login
-pixverse auth status --json
-pixverse account info --json
-```
+採用版は変更せず新しい版を作ります。送信前に台帳と費用予約を保存し、既知IDを再開します。送信結果が不明なら照合待ちにして自動再投入しません。明示OFFは保持します。Canvasでの人の変更は差分として扱い、黙って巻き戻したりCreateで二重送信したりしません。
 
-### 4. まず環境診断する
+生成成功と作品への採用は別です。実ファイル、技術・人物・継続性・音・作品の検品を通して納品します。mock/fixtureの合格は画質・声の再現・口パク・正確な料金・全Canvas機能の実測ではありません。TTSの重畳はナレーションです。既存FFmpeg/ffprobeでcut・trim・明示cropと保護領域・fit/pad・音声mix・SRT別添を扱います。既存Python/Pillowと指定フォントがあれば安全領域内の基本字幕焼込も可能です。黒画面・無音区間・音量は測定し、指定された閾値だけで拒否します。複雑な演出効果・transitionは未対応として止めます。技術検査後も完成版の創作採用は別途必要です。実生成の創作品質は、別の上限付き試験で確認します。
 
-```bash
-npm run pipeline:doctor -- --format markdown
-```
+## 既存作品の移行と復帰
 
-`doctor` は Node.js、依存パッケージ、PixVerse CLI のバージョン、認証状態、Remotion の有無をまとめて確認します。古い PixVerse CLI が入っている場合は `npm install -g pixverse@latest` を案内します。
+旧コード・fixture・素材を保持し、[移行](references/production-v1.md#migration-and-rollback)は別の新形式とレポートを返します。原本を書換えたり、移行だけで再生成したり、QAや費用を推測で埋めたりしません。[旧入口文書](references/legacy-entrypoints.md)も原文保存しています。
 
-### 5. エージェントに話しかける
-
-Claude Code を開いて、自然言語で依頼するだけです。
-
-## 自然言語で使う
-
-Shotpack は「コマンド集」ではなく、エージェントに自然言語で頼んで動かす制作ワークスペースとして使えます。作りたい動画を文章で伝えると、エージェントが `brief.md`、`storyboard.yaml`、`project.yaml`、dry-run、Gate 確認、生成、render までを必要に応じて進めます。
-
-コマンドは、自分で細かく制御したい場合や自動化したい場合の補助です。通常は次のように依頼します。
-
-| やりたいこと | 自然言語での頼み方 |
-|-------------|-------------------|
-| 最初から動画を作る | 「PixVerse Shotpack で 30 秒のシネマティックなプロモ動画を作って。brief と storyboard を作り、dry-run まで進めて Gate 1 で確認させて」 |
-| キャラや場所の一貫性を重視する | 「image-first の i2v で進めて。まず design bible と keyframe を作って、動画生成前に確認を取って」 |
-| 既存素材から続きだけ進める | 「今の `dist/` と `manifest.json` を確認して、既存素材から最終 MP4 だけ再 render して」 |
-| Michibiki に渡す | 「この Shotpack project を Michibiki 用の VideoSpec に export して、Editframe project を作れる状態にして」 |
-| Michibiki 側で編集を続ける | 「Shotpack から Michibiki handoff を実行して、編集 project と preview まで作って。cloud render は使わないで」 |
-
-エージェントが絵コンテや実行計画を作るときは、[`references/prompt-library.md`](./references/prompt-library.md)、[`references/model-routing.md`](./references/model-routing.md)、[`references/pixverse-best-practices.md`](./references/pixverse-best-practices.md) を参照します。これにより、prompt pattern、model 選定理由、PixVerse CLI の制作ルールを揃えてから `storyboard.yaml` や dry-run に進めます。
-
-## Michibiki 連携（オプション）
-
-Shotpack は、制作内容を Michibiki が扱いやすい `VideoSpec` に書き出せます。これはオプション連携です。Michibiki はこのリポジトリに同梱されず、Git submodule でもありません。
-
-Michibiki は、構造化された `VideoSpec` を読み取り、Editframe / HyperFrames / Remotion などの編集 project、preview、render workflow へ変換する別リポジトリの制作ルーターです。このリポジトリでは Shotpack が企画と PixVerse 素材生成を担当し、Michibiki はその計画を受け取って編集・納品側へつなぐ役割です。
-
-### 1. Michibiki を別に用意する
-
-```bash
-cd ..
-git clone https://github.com/Takamasa045/michibiki.git
-cd michibiki
-node scripts/setup.mjs
-```
-
-### 2. Shotpack から引き渡しファイルを書き出す
-
-```bash
-cd ../pixverse-shotpack
-./bin/pipeline export --config ./project.yaml --engine editframe
-```
-
-このコマンドは PixVerse も Michibiki も呼びません。`dist/video-spec.json` と `dist/michibiki-handoff.json` を作るだけです。
-
-書き出した spec は Michibiki 側から直接読めます。
-
-```bash
-cd ../michibiki
-pnpm michibiki decide --spec ../pixverse-shotpack/dist/video-spec.json
-pnpm michibiki generate --spec ../pixverse-shotpack/dist/video-spec.json --engine editframe
-```
-
-Michibiki 側で生成される編集 project、preview、render 成果物は、Michibiki リポジトリ内の `outputs/jobs/<job-id>/` にまとまります。
-
-### 3. Michibiki CLI まで呼びたい場合
-
-```bash
-./bin/pipeline export \
-  --config ./project.yaml \
-  --engine editframe \
-  --michibiki-path ../michibiki \
-  --run-michibiki
-```
-
-これは Michibiki を `pnpm michibiki generate --spec dist/video-spec.json` として実行します。コマンドは Michibiki リポジトリ上で動くため、編集 project、preview、最終 render は Shotpack 内ではなく `../michibiki/outputs/jobs/<job-id>/` に保存されます。最終 MP4 の render は Michibiki 側で確認してから実行してください。クラウド render が必要な場合は、明示的に `--allow-cloud-render` を付けます。
-
-### 出力の使い分け
-
-| 出力 | 用途 |
-|------|------|
-| `dist/video-spec.json` | Michibiki 互換の企画・尺・scene・asset 情報 |
-| `dist/michibiki-handoff.json` | 実行コマンド、Michibiki パス、実行結果の記録 |
-| `../michibiki/outputs/jobs/<job-id>/` | Michibiki 側の編集 project、preview、render 成果物 |
-| `--engine editframe` | Editframe プロジェクトを作りたい場合 |
-| `--engine hyperframes` | HyperFrames 互換プロジェクトを作りたい場合 |
-| `--engine remotion` | Remotion 側へ寄せたい場合 |
-| `--engine auto` | Michibiki の router に判断させたい場合 |
-
-## 依頼の例
-
-| やりたいこと | エージェントへの言い方 |
-|-------------|---------------------|
-| まず環境が正しいか確認したい | 「doctor で環境診断して」 |
-| まず設定が正しいか確認したい | 「設定を検証して」 |
-| どんな計画になるか見たい | 「実行計画を見せて」 |
-| AI を呼ばずに事前チェックしたい | 「dry-run して問題があれば直して」 |
-| 最初から最後まで全部やってほしい | 「shotpack を生成して MP4 まで仕上げて」 |
-| 前に作った素材で動画だけ作り直したい | 「今ある manifest で再 render して」 |
-| 編集画面だけ確認したい | 「Remotion を起動して Shotpack を確認して」 |
-| Michibiki / HyperFrames に渡したい | 「Michibiki 用に export して」 |
-
-## 2 つの制作モード
-
-| モード | どんなとき使う？ | 説明 |
-|--------|----------------|------|
-| `t2v`（テキスト→動画） | スピード重視 | テキスト指示だけで素早く動画を生成 |
-| `i2v`（画像→動画） | 世界観の統一重視 | まず参照画像を作り、それをベースに動画を生成 |
-
-## 対応モデルの目安
-
-2026-07-04 時点では PixVerse CLI `1.2.x` の挙動を基準にしています。ナレーション音声は legacy `create speech` ではなく、`create voice` で別音声 asset として作ります。
-
-| モデル | 使いどころ | 備考 |
-|--------|------------|------|
-| `v6` | 通常制作、extend、multi-shot | 既定モデル。1-15 秒、最大 1080p |
-| `pixverse-c1` | cinematic / action / reference 重視 | 1-15 秒、最大 1080p。公式 API 名 `c1` は CLI 用に `pixverse-c1` へ正規化 |
-| `seedance-2.0-standard` | 高品質な third-party 生成 | `1080p` まで validation 対応 |
-| `veo-3.1-standard` / `veo-3.1-fast` | Veo 系の比較候補 | `2160p` まで validation 対応 |
-| `create voice` | 全体ナレーション音声 | `project.yaml` の `assets.voiceText` と任意の `assets.voiceId` を使う。dry-run では voice job 数だけ確認できる |
-
-完全な制約表は [references/model-constraints.md](./references/model-constraints.md) を見てください。
-
-## 主なファイルの役割
-
-| ファイル / フォルダ | 何が入っている？ |
-|--------------------|-----------------|
-| `project.yaml` | プロジェクトの全設定（エージェントが読み書きする中心ファイル） |
-| `brief.md` | あなたの依頼内容（企画書） |
-| `storyboard.yaml` | 絵コンテ（カット割り・プロンプト・尺など） |
-| `dist/` | 生成された動画・画像・ログなどの出力先 |
-| `dist/manifest.json` | 生成物の一覧表（Remotion が読む） |
-| `skills/` | 各スタッフ（サブエージェント）の役割定義 |
-| `workflows/` | 制作フローの手順書 |
-| `references/` | プロンプト型、モデル選定、制作ベストプラクティス、AI モデルの制約・コスト・エラーコードなどの参考資料 |
-| `src/` | Remotion の映像テンプレート |
-
-## 完成物
-
-パイプラインが完了すると、`dist/` フォルダに以下が出力されます。
-
-| ファイル | 内容 |
-|---------|------|
-| `dist/scene-01.mp4` など | 各カットの動画素材 |
-| `dist/vertical/*.mp4` | 縦型（9:16）バージョン |
-| `dist/manifest.json` | 全素材の一覧と設定 |
-| `dist/credits-report.json` | 使用クレジット（コスト）の報告 |
-| `dist/run-log.md` | 実行ログ |
-| `dist/renders/*.mp4` | 最終完成動画 |
-
-## 手動で操作したい場合
-
-エージェントに任せず自分でコマンドを打ちたい場合は、以下を使います。
-
-```bash
-# パイプライン全体
-./bin/pipeline doctor --config ./project.yaml     # 環境診断
-./bin/pipeline validate --config ./project.yaml   # 設定チェック
-./bin/pipeline plan --config ./project.yaml       # 実行計画作成
-./bin/pipeline plan --config ./project.yaml --format markdown  # Gate 用サマリ
-./bin/pipeline run --config ./project.yaml --dry-run  # 予行演習
-./bin/pipeline run --config ./project.yaml        # 本番実行
-./bin/pipeline render --config ./project.yaml     # MP4 書き出し
-./bin/pipeline export --config ./project.yaml --engine editframe  # Michibiki 用に書き出し
-
-# Remotion だけ触る場合
-npm run start              # プレビュー画面を開く
-npm run render:shotpack    # MP4 を書き出す
-```
-
-dry-run は PixVerse を呼ばず、`dist/dry-run-plan.json`、`dist/dry-run.md`、`dist/dry-run-manifest.json` を出力します。`assets.voiceText` がある場合は、`audio/<slug>-voice.mp3` を予約し、plan に voice job を表示します。
-`export` は PixVerse を呼ばず、既存の絵コンテと見つかった素材から `dist/video-spec.json` と `dist/michibiki-handoff.json` を出力します。
-
-## もっと詳しく知りたい場合
-
-1. [project.yaml](./project.yaml) - 設定ファイルの実物
-2. [SKILL.md](./SKILL.md) - エージェントの詳細仕様
-3. [references/prompt-library.md](./references/prompt-library.md) - プロンプト型と文例
-4. [references/model-routing.md](./references/model-routing.md) - workflow と model の選び方
-5. [references/pixverse-best-practices.md](./references/pixverse-best-practices.md) - PixVerse CLI 制作ルール
-6. [workflows/orchestrator-flow.md](./workflows/orchestrator-flow.md) - 進行管理の詳細
-7. [brief.md](./brief.md) / [storyboard.yaml](./storyboard.yaml) - 企画書と絵コンテの実物
+旧runtimeは `./bin/pipeline --legacy …`（Characterは `remotion/bin/pipeline --legacy …` も可）で明示的に選びます。`--legacy` なしのpipelineは新productionへ転送します。旧入力、素材、Git版、台帳を保管して切り替えます。同じ案件で新旧の有料処理を同時実行しないでください。

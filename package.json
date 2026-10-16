@@ -11,7 +11,10 @@
     "typecheck": "tsc --noEmit",
     "start": "npm run prepare:assets && remotion studio src/index.ts --gl=swangle",
     "render:3d-linked": "remotion render src/index.ts LinkedParticles dist/3d/linked-particles.mp4 --codec=h264 --crf=18 --gl=swangle",
-    "render:shotpack": "npm run prepare:assets && remotion render src/index.ts Shotpack dist/renders/shotpack-full.mp4 --codec=h264 --crf=18 --audio-bitrate=320k --gl=swangle"
+    "render:shotpack": "npm run prepare:assets && remotion render src/index.ts Shotpack dist/renders/shotpack-full.mp4 --codec=h264 --crf=18 --audio-bitrate=320k --gl=swangle",
+    "test:production": "node --test production-core/test/*.test.mjs",
+    "production": "node production-core/src/cli.mjs",
+    "core:check": "node tools/sync-core.mjs --check"
   },
   "dependencies": {
     "@fontsource/bebas-neue": "^5.2.7",
